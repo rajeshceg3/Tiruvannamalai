@@ -57,15 +57,17 @@ app.use((req, res, next) => {
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
+  // Default to 5000 if not specified. Host can be overridden via HOST env var
+  // (e.g. HOST=127.0.0.1) which is useful in environments where binding to
+  // 0.0.0.0 is not supported.
   const port = parseInt(process.env.PORT || '5000', 10);
+  const host = process.env.HOST || "0.0.0.0";
+
   server.listen({
     port,
-    host: "0.0.0.0",
+    host,
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    log(`serving on ${host}:${port}`);
   });
 })();
