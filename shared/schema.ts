@@ -1,4 +1,8 @@
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// --- Static Data Definitions (kept for reference and type safety) ---
 
 export const shrineSchema = z.object({
   id: z.string(),
@@ -131,3 +135,49 @@ export const shrineData: Shrine[] = [
     imageUrl: "https://images.unsplash.com/photo-1582510003544-4d00b7f74220?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
   }
 ];
+
+// --- Database Schema ---
+
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const visits = pgTable("visits", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  shrineId: text("shrine_id").notNull(),
+  visitedAt: timestamp("visited_at").defaultNow().notNull(),
+  notes: text("notes"), // User's personal reflection
+  isVirtual: boolean("is_virtual").default(true).notNull(), // true = checked in from app remotely
+});
+
+// For keeping track of overall journey state
+export const journeys = pgTable("journeys", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  status: text("status").notNull().default("active"), // active, completed, paused
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+  currentShrineOrder: integer("current_shrine_order").default(0).notNull(), // To track sequence
+});
+
+// --- Zod Schemas for API Validation ---
+
+export const insertUserSchema = createInsertSchema(users).pick({
+  username: true,
+  password: true,
+});
+
+export const insertVisitSchema = createInsertSchema(visits).pick({
+  shrineId: true,
+  notes: true,
+  isVirtual: true,
+});
+
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type Visit = typeof visits.$inferSelect;
+export type Journey = typeof journeys.$inferSelect;
