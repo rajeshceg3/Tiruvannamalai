@@ -1,28 +1,214 @@
-import { type Shrine, shrineData } from "@shared/schema";
+import {
+  type Shrine,
+  shrineData,
+  type User,
+  type InsertUser,
+  type Visit,
+  type Journey,
+} from "@shared/schema";
 
 export interface IStorage {
+  // Shrine Data (Static)
   getShrines(): Promise<Shrine[]>;
   getShrine(id: string): Promise<Shrine | undefined>;
+
+  // User Data
+  getUser(id: number): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+
+  // Visits
+  createVisit(userId: number, shrineId: string, notes?: string): Promise<Visit>;
+  getVisits(userId: number): Promise<Visit[]>;
+  updateVisitNote(visitId: number, notes: string): Promise<Visit | undefined>;
+
+  // Journey
+  getJourney(userId: number): Promise<Journey | undefined>;
+  createOrUpdateJourney(userId: number, currentShrineOrder: number): Promise<Journey>;
 }
 
 export class MemStorage implements IStorage {
-  private shrines: Map<string, Shrine>;
+  private users: Map<number, User>;
+  private visits: Map<number, Visit>;
+  private journeys: Map<number, Journey>;
+  private currentUserId: number;
+  private currentVisitId: number;
+  private currentJourneyId: number;
 
   constructor() {
-    this.shrines = new Map();
-    // Initialize with shrine data
-    shrineData.forEach(shrine => {
-      this.shrines.set(shrine.id, shrine);
-    });
+    this.users = new Map();
+    this.visits = new Map();
+    this.journeys = new Map();
+    this.currentUserId = 1;
+    this.currentVisitId = 1;
+    this.currentJourneyId = 1;
   }
 
+  // Static Shrine Data
   async getShrines(): Promise<Shrine[]> {
-    return Array.from(this.shrines.values()).sort((a, b) => a.order - b.order);
+    return shrineData.sort((a, b) => a.order - b.order);
   }
 
   async getShrine(id: string): Promise<Shrine | undefined> {
-    return this.shrines.get(id);
+    return shrineData.find(s => s.id === id);
+  }
+
+  // User Data
+  async getUser(id: number): Promise<User | undefined> {
+    return this.users.get(id);
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.username === username,
+    );
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const id = this.currentUserId++;
+    const user: User = { ...insertUser, id };
+    this.users.set(id, user);
+    return user;
+  }
+
+  // Visits
+  async createVisit(userId: number, shrineId: string, notes?: string): Promise<Visit> {
+    const id = this.currentVisitId++;
+    const visit: Visit = {
+      id,
+      userId,
+      shrineId,
+      notes: notes || null,
+      isVirtual: true,
+      visitedAt: new Date(),
+    };
+    this.visits.set(id, visit);
+    return visit;
+  }
+
+  async getVisits(userId: number): Promise<Visit[]> {
+    return Array.from(this.visits.values()).filter(
+      (visit) => visit.userId === userId,
+    );
+  }
+
+  async updateVisitNote(visitId: number, notes: string): Promise<Visit | undefined> {
+    const visit = this.visits.get(visitId);
+    if (!visit) return undefined;
+
+    const updatedVisit = { ...visit, notes };
+    this.visits.set(visitId, updatedVisit);
+    return updatedVisit;
+  }
+
+  // Journey
+  async getJourney(userId: number): Promise<Journey | undefined> {
+    return Array.from(this.journeys.values()).find(
+      (journey) => journey.userId === userId,
+    );
+  }
+
+  async createOrUpdateJourney(userId: number, currentShrineOrder: number): Promise<Journey> {
+    const existing = await this.getJourney(userId);
+
+    if (existing) {
+      const updated = { ...existing, currentShrineOrder };
+      this.journeys.set(existing.id, updated);
+      return updated;
+    } else {
+      const id = this.currentJourneyId++;
+      const journey: Journey = {
+        id,
+        userId,
+        currentShrineOrder,
+        status: "active",
+        startedAt: new Date(),
+        completedAt: null,
+      };
+      this.journeys.set(id, journey);
+      return journey;
+    }
   }
 }
 
 export const storage = new MemStorage();
+
+/*
+// PRODUCTION IMPLEMENTATION:
+// Use this implementation when a PostgreSQL database is available.
+// Ensure DATABASE_URL is set and `npm run db:push` has been run.
+
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
+import { users, visits, journeys } from "@shared/schema";
+
+export class DatabaseStorage implements IStorage {
+  async getShrines(): Promise<Shrine[]> {
+    return shrineData.sort((a, b) => a.order - b.order);
+  }
+
+  async getShrine(id: string): Promise<Shrine | undefined> {
+    return shrineData.find(s => s.id === id);
+  }
+
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  async createVisit(userId: number, shrineId: string, notes?: string): Promise<Visit> {
+    const [visit] = await db.insert(visits).values({
+      userId,
+      shrineId,
+      notes,
+      isVirtual: true,
+    }).returning();
+    return visit;
+  }
+
+  async getVisits(userId: number): Promise<Visit[]>;
+    return db.select().from(visits).where(eq(visits.userId, userId));
+  }
+
+  async updateVisitNote(visitId: number, notes: string): Promise<Visit | undefined> {
+    const [visit] = await db
+      .update(visits)
+      .set({ notes })
+      .where(eq(visits.id, visitId))
+      .returning();
+    return visit;
+  }
+
+  async getJourney(userId: number): Promise<Journey | undefined> {
+    const [journey] = await db.select().from(journeys).where(eq(journeys.userId, userId));
+    return journey;
+  }
+
+  async createOrUpdateJourney(userId: number, currentShrineOrder: number): Promise<Journey> {
+    const [existing] = await db.select().from(journeys).where(eq(journeys.userId, userId));
+
+    if (existing) {
+      const [updated] = await db.update(journeys)
+        .set({ currentShrineOrder })
+        .where(eq(journeys.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(journeys)
+        .values({ userId, currentShrineOrder, status: "active" })
+        .returning();
+      return created;
+    }
+  }
+}
+*/
