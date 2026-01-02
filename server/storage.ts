@@ -73,6 +73,14 @@ export class MemStorage implements IStorage {
 
   // Visits
   async createVisit(userId: number, shrineId: string, notes?: string): Promise<Visit> {
+    const existingVisit = Array.from(this.visits.values()).find(
+      (v) => v.userId === userId && v.shrineId === shrineId,
+    );
+
+    if (existingVisit) {
+      return existingVisit;
+    }
+
     const id = this.currentVisitId++;
     const visit: Visit = {
       id,

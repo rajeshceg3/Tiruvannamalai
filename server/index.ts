@@ -37,6 +37,10 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  if (!process.env.SESSION_SECRET) {
+    console.warn("WARNING: SESSION_SECRET is not set. Using default insecure secret.");
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
