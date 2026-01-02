@@ -184,6 +184,9 @@ export default function DashboardPage() {
     );
   }
 
+  // Handle case where journey is loading separately or default to null
+  const currentJourney = journey ?? null;
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
@@ -203,7 +206,7 @@ export default function DashboardPage() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <JourneyProgress journey={journey ?? null} shrines={shrines} />
+        <JourneyProgress journey={currentJourney} shrines={shrines} />
 
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">

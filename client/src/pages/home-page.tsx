@@ -1,19 +1,28 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 export default function HomePage() {
   const { user } = useAuth();
+  const [imgLoaded, setImgLoaded] = useState(false);
 
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <div className="relative h-[600px] flex items-center justify-center text-white overflow-hidden">
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 z-0 bg-muted">
+          {!imgLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+               <Loader2 className="w-10 h-10 animate-spin text-white/50" />
+            </div>
+          )}
           <img
             src="https://images.unsplash.com/photo-1582510003544-4d00b7f74220?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80"
             alt="Arunachala Hill"
-            className="w-full h-full object-cover"
+            className={`w-full h-full object-cover transition-opacity duration-700 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+            onLoad={() => setImgLoaded(true)}
           />
           <div className="absolute inset-0 bg-black/40" />
         </div>

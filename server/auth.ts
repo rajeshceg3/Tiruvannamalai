@@ -6,6 +6,15 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import { hashPassword, comparePasswords } from "./hash";
+import rateLimit from "express-rate-limit";
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 requests per windowMs
+  message: "Too many login attempts, please try again later.",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 export function setupAuth(app: Express, storage: IStorage) {
   const MemoryStore = createMemoryStore(session);
@@ -57,7 +66,7 @@ export function setupAuth(app: Express, storage: IStorage) {
     }
   });
 
-  app.post("/api/register", async (req, res, next) => {
+  app.post("/api/register", authLimiter, async (req, res, next) => {
     try {
       const existingUser = await storage.getUserByUsername(req.body.username);
       if (existingUser) {
@@ -81,7 +90,7 @@ export function setupAuth(app: Express, storage: IStorage) {
     }
   });
 
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
+  app.post("/api/login", authLimiter, passport.authenticate("local"), (req, res) => {
     // Sanitize user object
     const { password, ...safeUser } = req.user as User;
     res.json(safeUser);
