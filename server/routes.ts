@@ -2,6 +2,9 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
+import { validateRequest } from "./middleware/validation";
+import { insertVisitSchema } from "@shared/schema";
+import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Authentication
@@ -50,12 +53,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create Visit (Check-in)
-  app.post("/api/visits", requireAuth, async (req, res) => {
+  app.post("/api/visits", requireAuth, validateRequest(insertVisitSchema), async (req, res) => {
     try {
       const { shrineId, notes } = req.body;
-      if (!shrineId) {
-        return res.status(400).json({ message: "Shrine ID is required" });
-      }
 
       // Verify shrine exists
       const shrine = await storage.getShrine(shrineId);
@@ -75,7 +75,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update Visit Note
-  app.patch("/api/visits/:id", requireAuth, async (req, res) => {
+  app.patch("/api/visits/:id", requireAuth, validateRequest(z.object({ notes: z.string() })), async (req, res) => {
     try {
       const visitId = parseInt(req.params.id);
       const { notes } = req.body;
