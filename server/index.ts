@@ -1,8 +1,14 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import helmet from "helmet";
 
 const app = express();
+// Security headers
+app.use(helmet({
+  contentSecurityPolicy: false, // Disabled for development/Vite compatibility issues. Enable and configure in production.
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -37,10 +43,6 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  if (!process.env.SESSION_SECRET) {
-    console.warn("WARNING: SESSION_SECRET is not set. Using default insecure secret.");
-  }
-
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

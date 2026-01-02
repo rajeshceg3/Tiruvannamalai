@@ -38,19 +38,19 @@ export default function HomePage() {
           <div className="flex gap-4 justify-center pt-8">
             {user ? (
                <Link href="/dashboard">
-                <Button size="lg" className="text-lg px-8">
+                <Button size="lg" className="text-lg px-8 shadow-lg hover:scale-105 transition-transform">
                   Continue Journey
                 </Button>
               </Link>
             ) : (
               <Link href="/auth">
-                <Button size="lg" className="text-lg px-8">
+                <Button size="lg" className="text-lg px-8 shadow-lg hover:scale-105 transition-transform">
                   Start Pilgrimage
                 </Button>
               </Link>
             )}
             <Link href="/api/shrines" target="_blank">
-               <Button variant="outline" size="lg" className="text-lg px-8 bg-transparent text-white border-white hover:bg-white/20 hover:text-white">
+               <Button variant="outline" size="lg" className="text-lg px-8 bg-transparent text-white border-white hover:bg-white/20 hover:text-white transition-colors">
                 View API
               </Button>
             </Link>

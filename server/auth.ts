@@ -1,5 +1,5 @@
 import { IStorage } from "./storage";
-import { User, InsertUser } from "@shared/schema";
+import { User, InsertUser, insertUserSchema } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import passport from "passport";
@@ -7,6 +7,7 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import { hashPassword, comparePasswords } from "./hash";
 import rateLimit from "express-rate-limit";
+import { validateRequest } from "./middleware/validation";
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -17,9 +18,18 @@ const authLimiter = rateLimit({
 });
 
 export function setupAuth(app: Express, storage: IStorage) {
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret) {
+     if (app.get("env") === "production") {
+       throw new Error("FATAL: SESSION_SECRET is not set in production environment.");
+     } else {
+       console.warn("WARNING: SESSION_SECRET is not set. Using default insecure secret for development.");
+     }
+  }
+
   const MemoryStore = createMemoryStore(session);
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || "r8q293847293847",
+    secret: sessionSecret || "default-insecure-secret-for-dev-only",
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -66,7 +76,7 @@ export function setupAuth(app: Express, storage: IStorage) {
     }
   });
 
-  app.post("/api/register", authLimiter, async (req, res, next) => {
+  app.post("/api/register", authLimiter, validateRequest(insertUserSchema), async (req, res, next) => {
     try {
       const existingUser = await storage.getUserByUsername(req.body.username);
       if (existingUser) {

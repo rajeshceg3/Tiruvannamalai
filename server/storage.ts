@@ -5,7 +5,12 @@ import {
   type InsertUser,
   type Visit,
   type Journey,
+  users,
+  visits,
+  journeys,
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // Shrine Data (Static)
@@ -66,7 +71,7 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
+    const user: User = { ...insertUser, id, createdAt: new Date() };
     this.users.set(id, user);
     return user;
   }
@@ -139,17 +144,6 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
-
-/*
-// PRODUCTION IMPLEMENTATION:
-// Use this implementation when a PostgreSQL database is available.
-// Ensure DATABASE_URL is set and `npm run db:push` has been run.
-
-import { db } from "./db";
-import { eq, and } from "drizzle-orm";
-import { users, visits, journeys } from "@shared/schema";
-
 export class DatabaseStorage implements IStorage {
   async getShrines(): Promise<Shrine[]> {
     return shrineData.sort((a, b) => a.order - b.order);
@@ -184,7 +178,7 @@ export class DatabaseStorage implements IStorage {
     return visit;
   }
 
-  async getVisits(userId: number): Promise<Visit[]>;
+  async getVisits(userId: number): Promise<Visit[]> {
     return db.select().from(visits).where(eq(visits.userId, userId));
   }
 
@@ -219,4 +213,13 @@ export class DatabaseStorage implements IStorage {
     }
   }
 }
-*/
+
+// Factory to select the correct storage implementation
+function createStorage(): IStorage {
+  if (process.env.DATABASE_URL) {
+    return new DatabaseStorage();
+  }
+  return new MemStorage();
+}
+
+export const storage = createStorage();
