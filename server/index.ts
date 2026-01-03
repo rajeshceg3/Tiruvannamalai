@@ -6,7 +6,16 @@ import helmet from "helmet";
 const app = express();
 // Security headers
 app.use(helmet({
-  contentSecurityPolicy: false, // Disabled for development/Vite compatibility issues. Enable and configure in production.
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // unsafe-eval needed for Vite dev
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https://images.unsplash.com"],
+      connectSrc: ["'self'", "ws:", "wss:"], // WebSockets for HMR
+    },
+  },
 }));
 
 app.use(express.json());

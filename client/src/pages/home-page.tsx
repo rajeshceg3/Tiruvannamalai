@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -27,34 +28,51 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-black/40" />
         </div>
 
-        <div className="relative z-10 text-center space-y-6 max-w-2xl px-4">
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
-            Sacred Steps
-          </h1>
-          <p className="text-xl md:text-2xl font-light opacity-90">
+        <div className="relative z-10 text-center space-y-8 max-w-3xl px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <h1 className="text-5xl md:text-7xl font-bold tracking-tight drop-shadow-md">
+              Sacred Steps
+            </h1>
+          </motion.div>
+          <motion.p
+            className="text-xl md:text-2xl font-light opacity-90 max-w-2xl mx-auto drop-shadow-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.8 }}
+          >
             A digital companion for the Giri Pradakshina.
             Discover the 8 Lingams, track your journey, and find inner peace.
-          </p>
-          <div className="flex gap-4 justify-center pt-8">
+          </motion.p>
+
+          <motion.div
+            className="flex flex-col sm:flex-row gap-4 justify-center pt-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8, duration: 0.6 }}
+          >
             {user ? (
                <Link href="/dashboard">
-                <Button size="lg" className="text-lg px-8 shadow-lg hover:scale-105 transition-transform">
+                <Button size="lg" className="text-lg px-8 shadow-xl hover:scale-105 transition-all duration-300 bg-primary/90 hover:bg-primary">
                   Continue Journey
                 </Button>
               </Link>
             ) : (
               <Link href="/auth">
-                <Button size="lg" className="text-lg px-8 shadow-lg hover:scale-105 transition-transform">
+                <Button size="lg" className="text-lg px-8 shadow-xl hover:scale-105 transition-all duration-300 bg-primary/90 hover:bg-primary">
                   Start Pilgrimage
                 </Button>
               </Link>
             )}
             <Link href="/api/shrines" target="_blank">
-               <Button variant="outline" size="lg" className="text-lg px-8 bg-transparent text-white border-white hover:bg-white/20 hover:text-white transition-colors">
+               <Button variant="outline" size="lg" className="text-lg px-8 bg-white/10 text-white border-white/50 hover:bg-white/20 hover:border-white transition-all duration-300 backdrop-blur-sm">
                 View API
               </Button>
             </Link>
-          </div>
+          </motion.div>
         </div>
       </div>
 
