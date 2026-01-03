@@ -5,6 +5,7 @@ import { setupAuth } from "./auth";
 import { validateRequest } from "./middleware/validation";
 import { insertVisitSchema } from "@shared/schema";
 import { z } from "zod";
+import "./types";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Authentication

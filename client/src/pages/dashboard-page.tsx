@@ -179,7 +179,14 @@ export default function DashboardPage() {
   if (!shrines || !visits) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="space-y-4 w-full max-w-lg px-4">
+           <div className="h-4 bg-muted animate-pulse rounded w-3/4 mx-auto" />
+           <div className="h-4 bg-muted animate-pulse rounded w-1/2 mx-auto" />
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+             <div className="h-40 bg-muted animate-pulse rounded" />
+             <div className="h-40 bg-muted animate-pulse rounded" />
+           </div>
+        </div>
       </div>
     );
   }
