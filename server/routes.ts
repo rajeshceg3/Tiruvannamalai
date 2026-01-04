@@ -6,8 +6,21 @@ import { validateRequest } from "./middleware/validation";
 import { insertVisitSchema } from "@shared/schema";
 import { z } from "zod";
 import "./types";
+import rateLimit from "express-rate-limit";
+
+// General API rate limiter
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: "Too many requests from this IP, please try again later."
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Apply rate limiting to all API routes
+  app.use("/api", apiLimiter);
+
   // Setup Authentication
   setupAuth(app, storage);
 

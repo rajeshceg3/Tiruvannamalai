@@ -35,16 +35,30 @@ app.use((req, res, next) => {
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
+      if (app.get("env") === "production") {
+        // Structured logging for production
+        const logEntry = {
+          timestamp: new Date().toISOString(),
+          method: req.method,
+          path: path,
+          statusCode: res.statusCode,
+          durationMs: duration,
+          responseBody: capturedJsonResponse // Caution: PII sanitization might be needed here depending on payload
+        };
+        console.log(JSON.stringify(logEntry));
+      } else {
+        // Human-readable logging for development
+        let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+        if (capturedJsonResponse) {
+          logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        }
 
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
+        if (logLine.length > 80) {
+          logLine = logLine.slice(0, 79) + "…";
+        }
 
-      log(logLine);
+        log(logLine);
+      }
     }
   });
 
