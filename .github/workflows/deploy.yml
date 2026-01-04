@@ -1,0 +1,81 @@
+name: Deployment Workflow
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # CI Job: Tests, Linting, and Build Verification
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        # 'npm ci' is faster and more reliable than 'npm install' for CI
+        run: npm ci
+
+      - name: Type check
+        run: npm run check
+
+      - name: Run tests
+        # Running vitest directly as no test script is defined in package.json
+        run: npx vitest run
+
+      - name: Verify build
+        run: npm run build
+
+  # CD Job: Build Docker Image and Publish (only on push to main)
+  publish:
+    needs: test-and-build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha
+            type=ref,event=branch
+            latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      # Optional: Trigger Deployment on Railway
+      # Uncomment and configure if using Railway
+      # - name: Deploy to Railway
+      #   uses: bervProject/railway-deploy@main
+      #   with:
+      #     railway_token: ${{ secrets.RAILWAY_TOKEN }}
+      #     service: "my-service"
