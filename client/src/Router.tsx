@@ -2,11 +2,12 @@ import { Switch, Route, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 
-// Pages (I'll need to create Dashboard and update others)
+// Pages
 import HomePage from "@/pages/home-page";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
 import DashboardPage from "@/pages/dashboard-page";
+import PathfinderPage from "@/pages/pathfinder-page";
 
 function ProtectedRoute({ component: Component, ...rest }: any) {
   const { user, isLoading } = useAuth();
@@ -32,14 +33,25 @@ export default function Router() {
   return (
     <Switch>
       <Route path="/auth" component={AuthPage} />
-      {/* Protect the home page or make it public?
-          Let's make Home public but with "Login" button,
-          and Dashboard protected.
+      {/*
+          If user is logged in, / should probably redirect to /dashboard
+          But for now let's keep HomePage as landing
       */}
-      <Route path="/" component={HomePage} />
+      <Route path="/" component={(props: any) => {
+          const { user } = useAuth();
+          const [, setLocation] = useLocation();
+          if (user) {
+              setLocation("/dashboard");
+              return null;
+          }
+          return <HomePage {...props} />;
+      }} />
 
-      {/* New Protected Routes */}
+      {/* Protected Routes */}
       <ProtectedRoute path="/dashboard" component={DashboardPage} />
+      <ProtectedRoute path="/pathfinder" component={PathfinderPage} />
+      {/* Route /journey can point to Dashboard or a new map view, for now reuse Dashboard logic or similar */}
+      <ProtectedRoute path="/journey" component={DashboardPage} />
 
       <Route component={NotFound} />
     </Switch>
