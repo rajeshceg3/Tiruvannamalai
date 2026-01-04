@@ -28,8 +28,7 @@ jobs:
         run: npm run check
 
       - name: Run tests
-        # Running vitest directly as no test script is defined in package.json
-        run: npx vitest run
+        run: npm test
 
       - name: Verify build
         run: npm run build
