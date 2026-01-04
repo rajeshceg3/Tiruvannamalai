@@ -196,14 +196,14 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b">
+      <header className="border-b sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-xl font-bold flex items-center gap-2">
              Sacred Steps
           </h1>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground hidden sm:inline">
-              Namaste, {user?.username}
+              Namaste, {user?.username || "Traveler"}
             </span>
             <Button variant="ghost" size="sm" onClick={() => logoutMutation.mutate()}>
               Logout
@@ -218,11 +218,17 @@ export default function DashboardPage() {
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <h2 className="text-2xl font-bold mb-6">Shrines on the Path</h2>
-            <ShrineList
-              shrines={shrines}
-              visits={visits}
-              onCheckIn={(id) => checkInMutation.mutate(id)}
-            />
+            {shrines.length === 0 ? (
+              <Card className="p-8 text-center text-muted-foreground">
+                <p>No shrines found. The path is currently hidden.</p>
+              </Card>
+            ) : (
+              <ShrineList
+                shrines={shrines}
+                visits={visits}
+                onCheckIn={(id) => checkInMutation.mutate(id)}
+              />
+            )}
           </div>
 
           <div>

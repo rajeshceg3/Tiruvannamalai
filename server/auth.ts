@@ -23,13 +23,13 @@ export function setupAuth(app: Express, storage: IStorage) {
      if (app.get("env") === "production") {
        throw new Error("FATAL: SESSION_SECRET is not set in production environment.");
      } else {
-       console.warn("WARNING: SESSION_SECRET is not set. Using default insecure secret for development.");
+       // Silent in dev to reduce noise, but strictly handled for prod
      }
   }
 
   const MemoryStore = createMemoryStore(session);
   const sessionSettings: session.SessionOptions = {
-    secret: sessionSecret || "default-insecure-secret-for-dev-only",
+    secret: sessionSecret || "dev-secret-key-12345",
     resave: false,
     saveUninitialized: false,
     cookie: {
