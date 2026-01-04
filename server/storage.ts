@@ -10,7 +10,7 @@ import {
   journeys,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
   // Shrine Data (Static)
@@ -23,7 +23,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
 
   // Visits
-  createVisit(userId: number, shrineId: string, notes?: string): Promise<Visit>;
+  createVisit(userId: number, shrineId: string, notes?: string, isVirtual?: boolean, verifiedLocation?: any): Promise<Visit>;
   getVisits(userId: number): Promise<Visit[]>;
   updateVisitNote(visitId: number, notes: string): Promise<Visit | undefined>;
 
@@ -77,12 +77,14 @@ export class MemStorage implements IStorage {
   }
 
   // Visits
-  async createVisit(userId: number, shrineId: string, notes?: string): Promise<Visit> {
+  async createVisit(userId: number, shrineId: string, notes?: string, isVirtual: boolean = true, verifiedLocation?: any): Promise<Visit> {
     const existingVisit = Array.from(this.visits.values()).find(
       (v) => v.userId === userId && v.shrineId === shrineId,
     );
 
     if (existingVisit) {
+      // If re-visiting and the new visit is physical, update it?
+      // For now, let's just return existing.
       return existingVisit;
     }
 
@@ -92,7 +94,8 @@ export class MemStorage implements IStorage {
       userId,
       shrineId,
       notes: notes || null,
-      isVirtual: true,
+      isVirtual,
+      verifiedLocation: verifiedLocation || null,
       visitedAt: new Date(),
     };
     this.visits.set(id, visit);
@@ -168,12 +171,22 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createVisit(userId: number, shrineId: string, notes?: string): Promise<Visit> {
+  async createVisit(userId: number, shrineId: string, notes?: string, isVirtual: boolean = true, verifiedLocation?: any): Promise<Visit> {
+    // Check if exists first to avoid duplicates (though UI should handle this)
+    const [existing] = await db.select().from(visits).where(
+        and(eq(visits.userId, userId), eq(visits.shrineId, shrineId))
+    );
+
+    if (existing) {
+        return existing;
+    }
+
     const [visit] = await db.insert(visits).values({
       userId,
       shrineId,
       notes,
-      isVirtual: true,
+      isVirtual,
+      verifiedLocation
     }).returning();
     return visit;
   }

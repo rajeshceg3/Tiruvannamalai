@@ -4,15 +4,15 @@ import { Journey, Visit, Shrine } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, MapPin, CheckCircle2, Circle } from "lucide-react";
+import { MapPin, CheckCircle2, Circle } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import { Sidebar } from "@/components/layout/sidebar";
 
 function JourneyProgress({ journey, shrines }: { journey: Journey | null, shrines: Shrine[] }) {
   if (!journey) return null;
@@ -149,7 +149,7 @@ function ShrineList({ shrines, visits, onCheckIn }: { shrines: Shrine[], visits:
 }
 
 export default function DashboardPage() {
-  const { user, logoutMutation } = useAuth();
+  const { user } = useAuth(); // Removed logoutMutation as it is now in Sidebar
   const { toast } = useToast();
 
   const { data: shrines } = useQuery<Shrine[]>({
@@ -195,60 +195,61 @@ export default function DashboardPage() {
   const currentJourney = journey ?? null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold flex items-center gap-2">
-             Sacred Steps
-          </h1>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground hidden sm:inline">
-              Namaste, {user?.username || "Traveler"}
-            </span>
-            <Button variant="ghost" size="sm" onClick={() => logoutMutation.mutate()}>
-              Logout
-            </Button>
-          </div>
-        </div>
-      </header>
+    <div className="flex h-screen bg-background">
+       {/* Use Sidebar Layout */}
+       <Sidebar className="hidden md:flex" />
 
-      <main className="container mx-auto px-4 py-8">
-        <JourneyProgress journey={currentJourney} shrines={shrines} />
+       <main className="flex-1 overflow-auto p-4 md:p-8 relative">
+        <header className="md:hidden flex justify-between items-center mb-6">
+           <h1 className="text-xl font-bold">Sacred Steps</h1>
+           {/* Mobile Sidebar Trigger could go here, for now rely on basic layout */}
+        </header>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <h2 className="text-2xl font-bold mb-6">Shrines on the Path</h2>
-            {shrines.length === 0 ? (
-              <Card className="p-8 text-center text-muted-foreground">
-                <p>No shrines found. The path is currently hidden.</p>
-              </Card>
-            ) : (
-              <ShrineList
-                shrines={shrines}
-                visits={visits}
-                onCheckIn={(id) => checkInMutation.mutate(id)}
-              />
-            )}
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-6 flex justify-between items-end">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+              <p className="text-muted-foreground">Namaste, {user?.username || "Traveler"}</p>
+            </div>
           </div>
 
-          <div>
-            <h2 className="text-2xl font-bold mb-6">Your Journal</h2>
-            <ScrollArea className="h-[calc(100vh-300px)] pr-4">
-              {visits.length === 0 ? (
-                <div className="text-center p-8 border border-dashed rounded-lg text-muted-foreground">
-                  <p>Your journal is empty.</p>
-                  <p className="text-sm mt-2">Check in to a shrine to start writing.</p>
-                </div>
+          <JourneyProgress journey={currentJourney} shrines={shrines} />
+
+          <div className="grid lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <h2 className="text-2xl font-bold mb-6">Shrines on the Path</h2>
+              {shrines.length === 0 ? (
+                <Card className="p-8 text-center text-muted-foreground">
+                  <p>No shrines found. The path is currently hidden.</p>
+                </Card>
               ) : (
-                visits
-                  .sort((a, b) => new Date(b.visitedAt).getTime() - new Date(a.visitedAt).getTime())
-                  .map(visit => {
-                    const shrine = shrines.find(s => s.id === visit.shrineId);
-                    if (!shrine) return null;
-                    return <VisitCard key={visit.id} visit={visit} shrine={shrine} />;
-                  })
+                <ShrineList
+                  shrines={shrines}
+                  visits={visits}
+                  onCheckIn={(id) => checkInMutation.mutate(id)}
+                />
               )}
-            </ScrollArea>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold mb-6">Your Journal</h2>
+              <ScrollArea className="h-[calc(100vh-300px)] pr-4">
+                {visits.length === 0 ? (
+                  <div className="text-center p-8 border border-dashed rounded-lg text-muted-foreground">
+                    <p>Your journal is empty.</p>
+                    <p className="text-sm mt-2">Check in to a shrine to start writing.</p>
+                  </div>
+                ) : (
+                  visits
+                    .sort((a, b) => new Date(b.visitedAt).getTime() - new Date(a.visitedAt).getTime())
+                    .map(visit => {
+                      const shrine = shrines.find(s => s.id === visit.shrineId);
+                      if (!shrine) return null;
+                      return <VisitCard key={visit.id} visit={visit} shrine={shrine} />;
+                    })
+                )}
+              </ScrollArea>
+            </div>
           </div>
         </div>
       </main>

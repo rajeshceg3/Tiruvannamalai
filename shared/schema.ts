@@ -152,6 +152,7 @@ export const visits = pgTable("visits", {
   visitedAt: timestamp("visited_at").defaultNow().notNull(),
   notes: text("notes"), // User's personal reflection
   isVirtual: boolean("is_virtual").default(true).notNull(), // true = checked in from app remotely
+  verifiedLocation: jsonb("verified_location"), // Stores { lat, lng, accuracy, timestamp }
 });
 
 // For keeping track of overall journey state
@@ -178,6 +179,10 @@ export const insertVisitSchema = createInsertSchema(visits).pick({
   shrineId: true,
   notes: true,
   isVirtual: true,
+}).extend({
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  accuracy: z.number().optional(),
 });
 
 export type User = typeof users.$inferSelect;

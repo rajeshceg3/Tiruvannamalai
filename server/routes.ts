@@ -7,6 +7,7 @@ import { insertVisitSchema } from "@shared/schema";
 import { z } from "zod";
 import "./types";
 import rateLimit from "express-rate-limit";
+import { calculateDistance } from "./lib/geo";
 
 // General API rate limiter
 const apiLimiter = rateLimit({
@@ -16,6 +17,8 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
   message: "Too many requests from this IP, please try again later."
 });
+
+const VERIFICATION_THRESHOLD_METERS = 200; // Distance tolerance for check-in
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Apply rate limiting to all API routes
@@ -69,7 +72,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create Visit (Check-in)
   app.post("/api/visits", requireAuth, validateRequest(insertVisitSchema), async (req, res) => {
     try {
-      const { shrineId, notes } = req.body;
+      const { shrineId, notes, latitude, longitude, accuracy } = req.body;
 
       // Verify shrine exists
       const shrine = await storage.getShrine(shrineId);
@@ -77,13 +80,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Invalid shrine" });
       }
 
-      const visit = await storage.createVisit(req.user!.id, shrineId, notes);
+      let isVirtual = true;
+      let verifiedLocation = null;
+
+      // Verification Logic
+      if (latitude !== undefined && longitude !== undefined) {
+        const distance = calculateDistance(latitude, longitude, shrine.latitude, shrine.longitude);
+
+        // Check if within range (considering GPS accuracy if provided, but capping it)
+        // If accuracy is huge (e.g. 2000m), we probably shouldn't trust it blindly,
+        // but for now let's just use the calculated distance vs threshold.
+
+        if (distance <= VERIFICATION_THRESHOLD_METERS) {
+          isVirtual = false;
+          verifiedLocation = {
+            latitude,
+            longitude,
+            accuracy,
+            distance,
+            timestamp: new Date().toISOString()
+          };
+        }
+      }
+
+      const visit = await storage.createVisit(req.user!.id, shrineId, notes, isVirtual, verifiedLocation);
 
       // Update journey progress
       await storage.createOrUpdateJourney(req.user!.id, shrine.order);
 
       res.status(201).json(visit);
     } catch (error) {
+      console.error(error);
       res.status(500).json({ message: "Failed to create visit" });
     }
   });
