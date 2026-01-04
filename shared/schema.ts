@@ -169,6 +169,9 @@ export const journeys = pgTable("journeys", {
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
+}).extend({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
 });
 
 export const insertVisitSchema = createInsertSchema(visits).pick({
