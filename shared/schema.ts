@@ -93,20 +93,6 @@ export const shrineData: Shrine[] = [
     imageUrl: "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
   },
   {
-    id: "varuna-lingam-energy",
-    name: "Varuna Lingam",
-    element: "Energy",
-    direction: "Northwest",
-    description: "Lightning and power in pure form. Did you feel that? Not the weather, but a charge in the air? This temple pulses with energy. You may find yourself surprised at how modern life melts away here, replaced by a raw reverence that surges through your veins like monsoon thunder.",
-    significance: "A temple that pulses with energy, where modern life melts away, replaced by raw reverence that surges through your veins like monsoon thunder.",
-    latitude: 12.2253,
-    longitude: 79.0597,
-    color: "#9370DB",
-    emoji: "⚡",
-    order: 6,
-    imageUrl: "https://images.unsplash.com/photo-1548013146-72479768bada?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
-  },
-  {
     id: "kubera-lingam",
     name: "Kubera Lingam",
     element: "Abundance",

@@ -11,9 +11,8 @@ export function Sidebar({ className, ...props }: SidebarProps) {
   const { logoutMutation } = useAuth();
 
   const navItems = [
-    { href: "/", icon: Home, label: "Dashboard" },
+    { href: "/dashboard", icon: Home, label: "Dashboard" },
     { href: "/pathfinder", icon: Compass, label: "Pathfinder" },
-    { href: "/journey", icon: Map, label: "Journey Map" }, // Placeholder for existing functionality
     // { href: "/journal", icon: BookOpen, label: "Journal" },
   ];
 

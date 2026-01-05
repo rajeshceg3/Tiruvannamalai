@@ -56,7 +56,14 @@ function VisitCard({ visit, shrine }: { visit: Visit, shrine: Shrine }) {
   return (
     <Card className="mb-4 overflow-hidden">
       <div className="flex flex-col md:flex-row">
-        <div className="w-full md:w-32 h-32 md:h-auto bg-cover bg-center" style={{ backgroundImage: `url(${shrine.imageUrl})` }} />
+        <div className="w-full md:w-32 h-32 md:h-auto overflow-hidden">
+          <img
+            src={shrine.imageUrl}
+            alt={shrine.name}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        </div>
         <div className="flex-1 p-4">
           <div className="flex justify-between items-start mb-2">
             <div>
