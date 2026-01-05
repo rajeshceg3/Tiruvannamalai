@@ -8,6 +8,7 @@ import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
 import DashboardPage from "@/pages/dashboard-page";
 import PathfinderPage from "@/pages/pathfinder-page";
+import DebriefPage from "@/pages/debrief-page";
 
 function ProtectedRoute({ component: Component, ...rest }: any) {
   const { user, isLoading } = useAuth();
@@ -50,6 +51,8 @@ export default function Router() {
       {/* Protected Routes */}
       <ProtectedRoute path="/dashboard" component={DashboardPage} />
       <ProtectedRoute path="/pathfinder" component={PathfinderPage} />
+      <ProtectedRoute path="/debrief" component={DebriefPage} />
+
       {/* Route /journey can point to Dashboard or a new map view, for now reuse Dashboard logic or similar */}
       <ProtectedRoute path="/journey" component={DashboardPage} />
 

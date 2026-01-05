@@ -1,4 +1,4 @@
-import { type Shrine } from "@shared/schema";
+import { type Shrine, LOCATION_VERIFICATION_THRESHOLD } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -73,7 +73,7 @@ export function PathfinderCompass({ targetShrine, onCheckIn, isCheckingIn, hasVi
 
   const distance = calculateDistance(latitude, longitude, targetShrine.latitude, targetShrine.longitude);
   const bearing = calculateBearing(latitude, longitude, targetShrine.latitude, targetShrine.longitude);
-  const isWithinRange = distance <= 200; // 200m range
+  const isWithinRange = distance <= LOCATION_VERIFICATION_THRESHOLD;
 
   // Note: We don't have device orientation in this simple hook,
   // so the arrow points to the bearing relative to North.

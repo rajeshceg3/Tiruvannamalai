@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Home, Compass, LogOut, Map, BookOpen } from "lucide-react";
+import { Home, Compass, LogOut, FileBarChart } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
@@ -13,7 +13,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
   const navItems = [
     { href: "/dashboard", icon: Home, label: "Dashboard" },
     { href: "/pathfinder", icon: Compass, label: "Pathfinder" },
-    // { href: "/journal", icon: BookOpen, label: "Journal" },
+    { href: "/debrief", icon: FileBarChart, label: "Debrief" },
   ];
 
   return (
