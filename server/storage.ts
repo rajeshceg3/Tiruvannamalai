@@ -8,6 +8,8 @@ import {
   users,
   visits,
   journeys,
+  achievements,
+  type Achievement,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -30,23 +32,31 @@ export interface IStorage {
   // Journey
   getJourney(userId: number): Promise<Journey | undefined>;
   createOrUpdateJourney(userId: number, currentShrineOrder: number): Promise<Journey>;
+
+  // Achievements
+  createAchievement(userId: number, badgeId: string): Promise<Achievement>;
+  getAchievements(userId: number): Promise<Achievement[]>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private visits: Map<number, Visit>;
   private journeys: Map<number, Journey>;
+  private achievements: Map<number, Achievement>;
   private currentUserId: number;
   private currentVisitId: number;
   private currentJourneyId: number;
+  private currentAchievementId: number;
 
   constructor() {
     this.users = new Map();
     this.visits = new Map();
     this.journeys = new Map();
+    this.achievements = new Map();
     this.currentUserId = 1;
     this.currentVisitId = 1;
     this.currentJourneyId = 1;
+    this.currentAchievementId = 1;
   }
 
   // Static Shrine Data
@@ -145,6 +155,23 @@ export class MemStorage implements IStorage {
       return journey;
     }
   }
+
+  async createAchievement(userId: number, badgeId: string): Promise<Achievement> {
+    const id = this.currentAchievementId++;
+    const achievement: Achievement = {
+      id,
+      userId,
+      badgeId,
+      earnedAt: new Date(),
+      metadata: null
+    };
+    this.achievements.set(id, achievement);
+    return achievement;
+  }
+
+  async getAchievements(userId: number): Promise<Achievement[]> {
+    return Array.from(this.achievements.values()).filter(a => a.userId === userId);
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -224,6 +251,17 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return created;
     }
+  }
+
+  async createAchievement(userId: number, badgeId: string): Promise<Achievement> {
+    const [achievement] = await db.insert(achievements)
+      .values({ userId, badgeId })
+      .returning();
+    return achievement;
+  }
+
+  async getAchievements(userId: number): Promise<Achievement[]> {
+    return db.select().from(achievements).where(eq(achievements.userId, userId));
   }
 }
 

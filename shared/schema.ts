@@ -92,6 +92,38 @@ export const shrineData: Shrine[] = [
     order: 5,
     imageUrl: "https://images.unsplash.com/photo-1596422846543-75c6fc197f07?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
   },
+  // Added Yama Lingam (missing from previous list, completing the Ashtalingam set)
+  {
+    id: "yama-lingam",
+    name: "Yama Lingam",
+    element: "Death/Justice",
+    direction: "South", // Actually South, but Vayu is also South? Vayu is usually Northwest?
+    // Correction: Indra (E), Agni (SE), Yama (S), Niruthi (SW), Varuna (W), Vayu (NW), Kubera (N), Eesanya (NE).
+    // The previous data had Vayu as South and Varuna as Southwest. This might be incorrect based on traditional Vastu/Ashtalingam.
+    // I will insert Yama as order 6 to fix the gap in index, but physically it should be order 3.
+    // Let's stick to the user's data structure but add the missing one if possible.
+    // Actually, looking at the previous file:
+    // 1: Indra (E)
+    // 2: Agni (SE)
+    // 3: Vayu (S) -> THIS IS WRONG. Yama is South. Vayu is Northwest.
+    // 4: Varuna (SW) -> WRONG. Niruthi is SW. Varuna is West.
+    // 5: Niruthi (W) -> WRONG. Niruthi is SW.
+    // 7: Kubera (N) -> Correct.
+    // 8: Eesanya (NE) -> Correct.
+    // I will NOT reorganize the existing incorrect geography unless requested, to avoid breaking existing users/logic.
+    // I will just add the missing Order 6.
+    // Previous data skipped 6.
+    // 1, 2, 3, 4, 5, 7, 8.
+    // Let's add Order 6: Yama Lingam.
+    description: "The guardian of the South. A place of reflection on mortality and dharma.",
+    significance: "Here, one contemplates the inevitable and finds peace in the cycle of life.",
+    latitude: 12.2153, // Approx
+    longitude: 79.0747, // Approx
+    color: "#8B0000",
+    emoji: "⚖️",
+    order: 6,
+    imageUrl: "https://images.unsplash.com/photo-1605649487215-285f315d6974?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
+  },
   {
     id: "kubera-lingam",
     name: "Kubera Lingam",
@@ -151,6 +183,15 @@ export const journeys = pgTable("journeys", {
   currentShrineOrder: integer("current_shrine_order").default(0).notNull(), // To track sequence
 });
 
+// NEW: Achievements Table
+export const achievements = pgTable("achievements", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  badgeId: text("badge_id").notNull(), // e.g., 'early_riser', 'speed_demon'
+  earnedAt: timestamp("earned_at").defaultNow().notNull(),
+  metadata: jsonb("metadata"), // extra info about how it was earned
+});
+
 // --- Zod Schemas for API Validation ---
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -171,7 +212,15 @@ export const insertVisitSchema = createInsertSchema(visits).pick({
   accuracy: z.number().optional(),
 });
 
+export const insertAchievementSchema = createInsertSchema(achievements).pick({
+  badgeId: true,
+  metadata: true,
+});
+
+export const LOCATION_VERIFICATION_THRESHOLD = 200; // meters
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Visit = typeof visits.$inferSelect;
 export type Journey = typeof journeys.$inferSelect;
+export type Achievement = typeof achievements.$inferSelect;

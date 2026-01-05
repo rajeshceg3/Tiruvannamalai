@@ -3,11 +3,12 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { validateRequest } from "./middleware/validation";
-import { insertVisitSchema } from "@shared/schema";
+import { insertVisitSchema, LOCATION_VERIFICATION_THRESHOLD } from "@shared/schema";
 import { z } from "zod";
 import "./types";
 import rateLimit from "express-rate-limit";
 import { calculateDistance } from "./lib/geo";
+import { calculateJourneyStats, checkAchievements, BADGE_DEFINITIONS } from "./lib/analytics";
 
 // General API rate limiter
 const apiLimiter = rateLimit({
@@ -17,8 +18,6 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
   message: "Too many requests from this IP, please try again later."
 });
-
-const VERIFICATION_THRESHOLD_METERS = 200; // Distance tolerance for check-in
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Apply rate limiting to all API routes
@@ -91,7 +90,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // If accuracy is huge (e.g. 2000m), we probably shouldn't trust it blindly,
         // but for now let's just use the calculated distance vs threshold.
 
-        if (distance <= VERIFICATION_THRESHOLD_METERS) {
+        if (distance <= LOCATION_VERIFICATION_THRESHOLD) {
           isVirtual = false;
           verifiedLocation = {
             latitude,
@@ -108,7 +107,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update journey progress
       await storage.createOrUpdateJourney(req.user!.id, shrine.order);
 
-      res.status(201).json(visit);
+      // Check for new achievements
+      const newBadges = await checkAchievements(req.user!.id);
+
+      res.status(201).json({ ...visit, newBadges });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Failed to create visit" });
@@ -139,6 +141,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch journey" });
     }
+  });
+
+  // Analytics & Debrief
+  app.get("/api/analytics", requireAuth, async (req, res) => {
+    try {
+      const stats = await calculateJourneyStats(req.user!.id);
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+
+  app.get("/api/badges", async (req, res) => {
+    res.json(BADGE_DEFINITIONS);
   });
 
   const httpServer = createServer(app);
