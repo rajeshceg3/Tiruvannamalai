@@ -10,9 +10,9 @@ describe("MemStorage", () => {
   });
 
   describe("Shrines", () => {
-    it("should return all shrines", async () => {
+    it("should return all 8 shrines", async () => {
       const shrines = await storage.getShrines();
-      expect(shrines).toHaveLength(shrineData.length);
+      expect(shrines).toHaveLength(8);
       expect(shrines[0].id).toBe("indra-lingam"); // Sorted by order
     });
 
@@ -20,6 +20,13 @@ describe("MemStorage", () => {
       const shrine = await storage.getShrine("agni-lingam");
       expect(shrine).toBeDefined();
       expect(shrine?.name).toBe("Agni Lingam");
+    });
+
+    it("should include Yama Lingam", async () => {
+      const shrine = await storage.getShrine("yama-lingam");
+      expect(shrine).toBeDefined();
+      expect(shrine?.name).toBe("Yama Lingam");
+      expect(shrine?.direction).toBe("South");
     });
   });
 
