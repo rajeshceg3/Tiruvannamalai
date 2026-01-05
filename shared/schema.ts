@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -139,7 +139,10 @@ export const visits = pgTable("visits", {
   notes: text("notes"), // User's personal reflection
   isVirtual: boolean("is_virtual").default(true).notNull(), // true = checked in from app remotely
   verifiedLocation: jsonb("verified_location"), // Stores { lat, lng, accuracy, timestamp }
-});
+}, (table) => [
+  index("user_id_idx").on(table.userId),
+  index("shrine_id_idx").on(table.shrineId)
+]);
 
 // For keeping track of overall journey state
 export const journeys = pgTable("journeys", {
@@ -158,7 +161,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
 }).extend({
   username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 export const insertVisitSchema = createInsertSchema(visits).pick({

@@ -1,24 +1,21 @@
 import { Switch, Route, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Loader2 } from "lucide-react";
+import { Suspense, lazy } from "react";
+import { ShellSkeleton } from "@/components/layout/shell-skeleton";
 
-// Pages
-import HomePage from "@/pages/home-page";
-import NotFound from "@/pages/not-found";
-import AuthPage from "@/pages/auth-page";
-import DashboardPage from "@/pages/dashboard-page";
-import PathfinderPage from "@/pages/pathfinder-page";
+// Lazy load pages
+const AuthPage = lazy(() => import("@/pages/auth-page"));
+const HomePage = lazy(() => import("@/pages/home-page"));
+const DashboardPage = lazy(() => import("@/pages/dashboard-page"));
+const PathfinderPage = lazy(() => import("@/pages/pathfinder-page"));
+const NotFound = lazy(() => import("@/pages/not-found"));
 
 function ProtectedRoute({ component: Component, ...rest }: any) {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <ShellSkeleton />;
   }
 
   if (!user) {
@@ -26,34 +23,39 @@ function ProtectedRoute({ component: Component, ...rest }: any) {
     return null;
   }
 
-  return <Component {...rest} />;
+  return (
+    <Suspense fallback={<ShellSkeleton />}>
+      <Component {...rest} />
+    </Suspense>
+  );
 }
 
 export default function Router() {
   return (
-    <Switch>
-      <Route path="/auth" component={AuthPage} />
-      {/*
-          If user is logged in, / should probably redirect to /dashboard
-          But for now let's keep HomePage as landing
-      */}
-      <Route path="/" component={(props: any) => {
-          const { user } = useAuth();
-          const [, setLocation] = useLocation();
-          if (user) {
-              setLocation("/dashboard");
-              return null;
-          }
-          return <HomePage {...props} />;
-      }} />
+    <Suspense fallback={<ShellSkeleton />}>
+      <Switch>
+        <Route path="/auth" component={AuthPage} />
 
-      {/* Protected Routes */}
-      <ProtectedRoute path="/dashboard" component={DashboardPage} />
-      <ProtectedRoute path="/pathfinder" component={PathfinderPage} />
-      {/* Route /journey can point to Dashboard or a new map view, for now reuse Dashboard logic or similar */}
-      <ProtectedRoute path="/journey" component={DashboardPage} />
+        <Route path="/" component={(props: any) => {
+            const { user, isLoading } = useAuth();
+            const [, setLocation] = useLocation();
 
-      <Route component={NotFound} />
-    </Switch>
+            if (isLoading) return <ShellSkeleton />;
+
+            if (user) {
+                setLocation("/dashboard");
+                return null;
+            }
+            return <HomePage {...props} />;
+        }} />
+
+        {/* Protected Routes */}
+        <ProtectedRoute path="/dashboard" component={DashboardPage} />
+        <ProtectedRoute path="/pathfinder" component={PathfinderPage} />
+        <ProtectedRoute path="/journey" component={DashboardPage} />
+
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
   );
 }
