@@ -9,6 +9,11 @@ import { hashPassword, comparePasswords } from "./hash";
 import rateLimit from "express-rate-limit";
 import { validateRequest } from "./middleware/validation";
 
+export function sanitizeUser(user: User) {
+  const { password, ...safeUser } = user;
+  return safeUser;
+}
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10, // Limit each IP to 10 requests per windowMs
@@ -91,9 +96,7 @@ export function setupAuth(app: Express, storage: IStorage) {
 
       req.login(user, (err) => {
         if (err) return next(err);
-        // Sanitize user object
-        const { password, ...safeUser } = user;
-        res.status(201).json(safeUser);
+        res.status(201).json(sanitizeUser(user));
       });
     } catch (err) {
       next(err);
@@ -101,9 +104,7 @@ export function setupAuth(app: Express, storage: IStorage) {
   });
 
   app.post("/api/login", authLimiter, passport.authenticate("local"), (req, res) => {
-    // Sanitize user object
-    const { password, ...safeUser } = req.user as User;
-    res.json(safeUser);
+    res.json(sanitizeUser(req.user as User));
   });
 
   app.post("/api/logout", (req, res, next) => {
@@ -115,8 +116,6 @@ export function setupAuth(app: Express, storage: IStorage) {
 
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    // Sanitize user object
-    const { password, ...safeUser } = req.user as User;
-    res.json(safeUser);
+    res.json(sanitizeUser(req.user as User));
   });
 }
