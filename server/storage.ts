@@ -10,7 +10,7 @@ import {
   journeys,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Shrine Data (Static)
@@ -103,9 +103,9 @@ export class MemStorage implements IStorage {
   }
 
   async getVisits(userId: number): Promise<Visit[]> {
-    return Array.from(this.visits.values()).filter(
-      (visit) => visit.userId === userId,
-    );
+    return Array.from(this.visits.values())
+      .filter((visit) => visit.userId === userId)
+      .sort((a, b) => b.visitedAt.getTime() - a.visitedAt.getTime());
   }
 
   async updateVisitNote(visitId: number, notes: string): Promise<Visit | undefined> {
@@ -128,9 +128,13 @@ export class MemStorage implements IStorage {
     const existing = await this.getJourney(userId);
 
     if (existing) {
-      const updated = { ...existing, currentShrineOrder };
-      this.journeys.set(existing.id, updated);
-      return updated;
+      // Only update if the new order is greater than the current one (prevent regression)
+      if (currentShrineOrder > existing.currentShrineOrder) {
+        const updated = { ...existing, currentShrineOrder };
+        this.journeys.set(existing.id, updated);
+        return updated;
+      }
+      return existing;
     } else {
       const id = this.currentJourneyId++;
       const journey: Journey = {
@@ -192,7 +196,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getVisits(userId: number): Promise<Visit[]> {
-    return db.select().from(visits).where(eq(visits.userId, userId));
+    return db
+      .select()
+      .from(visits)
+      .where(eq(visits.userId, userId))
+      .orderBy(desc(visits.visitedAt));
   }
 
   async updateVisitNote(visitId: number, notes: string): Promise<Visit | undefined> {
@@ -213,11 +221,15 @@ export class DatabaseStorage implements IStorage {
     const [existing] = await db.select().from(journeys).where(eq(journeys.userId, userId));
 
     if (existing) {
-      const [updated] = await db.update(journeys)
-        .set({ currentShrineOrder })
-        .where(eq(journeys.id, existing.id))
-        .returning();
-      return updated;
+      // Only update if the new order is greater than the current one
+      if (currentShrineOrder > existing.currentShrineOrder) {
+        const [updated] = await db.update(journeys)
+          .set({ currentShrineOrder })
+          .where(eq(journeys.id, existing.id))
+          .returning();
+        return updated;
+      }
+      return existing;
     } else {
       const [created] = await db.insert(journeys)
         .values({ userId, currentShrineOrder, status: "active" })

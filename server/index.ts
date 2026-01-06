@@ -5,15 +5,16 @@ import helmet from "helmet";
 
 const app = express();
 // Security headers
+const isProduction = process.env.NODE_ENV === "production";
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // unsafe-eval needed for Vite dev
+      scriptSrc: ["'self'", ...(isProduction ? [] : ["'unsafe-inline'", "'unsafe-eval'"])],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https://images.unsplash.com"],
-      connectSrc: ["'self'", "ws:", "wss:"], // WebSockets for HMR
+      connectSrc: ["'self'", ...(isProduction ? [] : ["ws:", "wss:"])],
     },
   },
 }));
@@ -43,7 +44,7 @@ app.use((req, res, next) => {
           path: path,
           statusCode: res.statusCode,
           durationMs: duration,
-          responseBody: capturedJsonResponse // Caution: PII sanitization might be needed here depending on payload
+          // Response body removed to prevent PII leakage
         };
         console.log(JSON.stringify(logEntry));
       } else {

@@ -183,9 +183,9 @@ export const insertVisitSchema = createInsertSchema(visits).pick({
   notes: true,
   isVirtual: true,
 }).extend({
-  latitude: z.number().optional(),
-  longitude: z.number().optional(),
-  accuracy: z.number().optional(),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+  accuracy: z.number().min(0).optional(),
 });
 
 export type User = typeof users.$inferSelect;

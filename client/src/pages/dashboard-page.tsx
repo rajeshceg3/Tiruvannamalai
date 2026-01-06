@@ -248,7 +248,6 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   visits
-                    .sort((a, b) => new Date(b.visitedAt).getTime() - new Date(a.visitedAt).getTime())
                     .map(visit => {
                       const shrine = shrines.find(s => s.id === visit.shrineId);
                       if (!shrine) return null;

@@ -19,6 +19,7 @@ const apiLimiter = rateLimit({
 });
 
 const VERIFICATION_THRESHOLD_METERS = 200; // Distance tolerance for check-in
+const MAX_ACCURACY_THRESHOLD_METERS = 100; // Minimum GPS accuracy required
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Apply rate limiting to all API routes
@@ -87,11 +88,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (latitude !== undefined && longitude !== undefined) {
         const distance = calculateDistance(latitude, longitude, shrine.latitude, shrine.longitude);
 
-        // Check if within range (considering GPS accuracy if provided, but capping it)
-        // If accuracy is huge (e.g. 2000m), we probably shouldn't trust it blindly,
-        // but for now let's just use the calculated distance vs threshold.
+        const isAccurateEnough = accuracy === undefined || accuracy <= MAX_ACCURACY_THRESHOLD_METERS;
+        const isInRange = distance <= VERIFICATION_THRESHOLD_METERS;
 
-        if (distance <= VERIFICATION_THRESHOLD_METERS) {
+        if (isAccurateEnough && isInRange) {
           isVirtual = false;
           verifiedLocation = {
             latitude,
