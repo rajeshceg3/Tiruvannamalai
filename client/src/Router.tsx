@@ -8,6 +8,7 @@ const AuthPage = lazy(() => import("@/pages/auth-page"));
 const HomePage = lazy(() => import("@/pages/home-page"));
 const DashboardPage = lazy(() => import("@/pages/dashboard-page"));
 const PathfinderPage = lazy(() => import("@/pages/pathfinder-page"));
+const GroupCommandPage = lazy(() => import("@/pages/group-command"));
 const MissionDebriefPage = lazy(() => import("@/pages/mission-debrief"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
@@ -53,6 +54,7 @@ export default function Router() {
         {/* Protected Routes */}
         <ProtectedRoute path="/dashboard" component={DashboardPage} />
         <ProtectedRoute path="/pathfinder" component={PathfinderPage} />
+        <ProtectedRoute path="/group-command" component={GroupCommandPage} />
         <ProtectedRoute path="/journey" component={DashboardPage} />
         <ProtectedRoute path="/debrief" component={MissionDebriefPage} />
 

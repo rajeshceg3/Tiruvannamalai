@@ -5,12 +5,17 @@ import {
   type InsertUser,
   type Visit,
   type Journey,
+  type Group,
+  type GroupMember,
   users,
   visits,
   journeys,
+  groups,
+  groupMembers,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
+import { nanoid } from "nanoid";
 
 export interface IStorage {
   // Shrine Data (Static)
@@ -30,23 +35,39 @@ export interface IStorage {
   // Journey
   getJourney(userId: number): Promise<Journey | undefined>;
   createOrUpdateJourney(userId: number, currentShrineOrder: number): Promise<Journey>;
+
+  // Groups
+  createGroup(name: string, creatorId: number): Promise<Group>;
+  getGroup(id: number): Promise<Group | undefined>;
+  getGroupByCode(code: string): Promise<Group | undefined>;
+  addGroupMember(groupId: number, userId: number): Promise<GroupMember>;
+  getGroupMembers(groupId: number): Promise<(GroupMember & { user: User })[]>;
+  getUserGroup(userId: number): Promise<Group | undefined>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private visits: Map<number, Visit>;
   private journeys: Map<number, Journey>;
+  private groups: Map<number, Group>;
+  private groupMembers: Map<number, GroupMember>;
   private currentUserId: number;
   private currentVisitId: number;
   private currentJourneyId: number;
+  private currentGroupId: number;
+  private currentGroupMemberId: number;
 
   constructor() {
     this.users = new Map();
     this.visits = new Map();
     this.journeys = new Map();
+    this.groups = new Map();
+    this.groupMembers = new Map();
     this.currentUserId = 1;
     this.currentVisitId = 1;
     this.currentJourneyId = 1;
+    this.currentGroupId = 1;
+    this.currentGroupMemberId = 1;
   }
 
   // Static Shrine Data
@@ -149,6 +170,64 @@ export class MemStorage implements IStorage {
       return journey;
     }
   }
+
+  // Groups
+  async createGroup(name: string, creatorId: number): Promise<Group> {
+    const id = this.currentGroupId++;
+    const code = nanoid(6).toUpperCase();
+    const group: Group = {
+      id,
+      name,
+      code,
+      creatorId,
+      createdAt: new Date(),
+    };
+    this.groups.set(id, group);
+    await this.addGroupMember(id, creatorId); // Creator joins automatically
+    return group;
+  }
+
+  async getGroup(id: number): Promise<Group | undefined> {
+    return this.groups.get(id);
+  }
+
+  async getGroupByCode(code: string): Promise<Group | undefined> {
+    return Array.from(this.groups.values()).find((g) => g.code === code);
+  }
+
+  async addGroupMember(groupId: number, userId: number): Promise<GroupMember> {
+    const id = this.currentGroupMemberId++;
+    const member: GroupMember = {
+      id,
+      groupId,
+      userId,
+      joinedAt: new Date(),
+    };
+    this.groupMembers.set(id, member);
+    return member;
+  }
+
+  async getGroupMembers(groupId: number): Promise<(GroupMember & { user: User })[]> {
+    const members = Array.from(this.groupMembers.values()).filter(
+      (m) => m.groupId === groupId
+    );
+    const result: (GroupMember & { user: User })[] = [];
+    for (const m of members) {
+      const user = await this.getUser(m.userId);
+      if (user) {
+        result.push({ ...m, user });
+      }
+    }
+    return result;
+  }
+
+  async getUserGroup(userId: number): Promise<Group | undefined> {
+    const member = Array.from(this.groupMembers.values())
+      .reverse() // Get latest
+      .find((m) => m.userId === userId);
+    if (!member) return undefined;
+    return this.getGroup(member.groupId);
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -236,6 +315,61 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return created;
     }
+  }
+
+  // Groups
+  async createGroup(name: string, creatorId: number): Promise<Group> {
+    const code = nanoid(6).toUpperCase();
+    const [group] = await db.insert(groups).values({
+      name,
+      code,
+      creatorId,
+    }).returning();
+    await this.addGroupMember(group.id, creatorId);
+    return group;
+  }
+
+  async getGroup(id: number): Promise<Group | undefined> {
+    const [group] = await db.select().from(groups).where(eq(groups.id, id));
+    return group;
+  }
+
+  async getGroupByCode(code: string): Promise<Group | undefined> {
+    const [group] = await db.select().from(groups).where(eq(groups.code, code));
+    return group;
+  }
+
+  async addGroupMember(groupId: number, userId: number): Promise<GroupMember> {
+    const [member] = await db.insert(groupMembers).values({
+      groupId,
+      userId,
+    }).returning();
+    return member;
+  }
+
+  async getGroupMembers(groupId: number): Promise<(GroupMember & { user: User })[]> {
+    const members = await db.select().from(groupMembers).where(eq(groupMembers.groupId, groupId));
+    const result: (GroupMember & { user: User })[] = [];
+    for (const m of members) {
+      const user = await this.getUser(m.userId);
+      if (user) {
+        result.push({ ...m, user });
+      }
+    }
+    return result;
+  }
+
+  async getUserGroup(userId: number): Promise<Group | undefined> {
+    // Basic implementation: just find the most recent group they joined
+    const [member] = await db
+      .select()
+      .from(groupMembers)
+      .where(eq(groupMembers.userId, userId))
+      .orderBy(desc(groupMembers.joinedAt))
+      .limit(1);
+
+    if (!member) return undefined;
+    return this.getGroup(member.groupId);
   }
 }
 

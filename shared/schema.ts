@@ -168,7 +168,32 @@ export const journeys = pgTable("journeys", {
   currentShrineOrder: integer("current_shrine_order").default(0).notNull(), // To track sequence
 });
 
+export const groups = pgTable("groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  code: text("code").notNull().unique(), // Invite code
+  creatorId: integer("creator_id").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const groupMembers = pgTable("group_members", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull().references(() => groups.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+});
+
 // --- Zod Schemas for API Validation ---
+
+export const insertGroupSchema = createInsertSchema(groups).pick({
+  name: true,
+}).extend({
+  name: z.string().min(3, "Group name must be at least 3 characters"),
+});
+
+export const joinGroupSchema = z.object({
+  code: z.string().length(6, "Invalid code format"),
+});
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -192,3 +217,6 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Visit = typeof visits.$inferSelect;
 export type Journey = typeof journeys.$inferSelect;
+export type Group = typeof groups.$inferSelect;
+export type GroupMember = typeof groupMembers.$inferSelect;
+export type JoinGroup = z.infer<typeof joinGroupSchema>;
