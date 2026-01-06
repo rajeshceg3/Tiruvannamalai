@@ -2,6 +2,7 @@ import { IStorage } from "./storage";
 import { User, InsertUser, insertUserSchema } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import connectPgSimple from "connect-pg-simple";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
@@ -32,7 +33,21 @@ export function setupAuth(app: Express, storage: IStorage) {
      }
   }
 
-  const MemoryStore = createMemoryStore(session);
+  let store: session.Store;
+
+  if (process.env.DATABASE_URL) {
+    const PgStore = connectPgSimple(session);
+    store = new PgStore({
+      conString: process.env.DATABASE_URL,
+      createTableIfMissing: true,
+    });
+  } else {
+    const MemoryStore = createMemoryStore(session);
+    store = new MemoryStore({
+      checkPeriod: 86400000,
+    });
+  }
+
   const sessionSettings: session.SessionOptions = {
     secret: sessionSecret || "dev-secret-key-12345",
     resave: false,
@@ -41,9 +56,7 @@ export function setupAuth(app: Express, storage: IStorage) {
       maxAge: 24 * 60 * 60 * 1000, // 1 day
       secure: app.get("env") === "production",
     },
-    store: new MemoryStore({
-      checkPeriod: 86400000,
-    }),
+    store,
   };
 
   if (app.get("env") === "production") {
