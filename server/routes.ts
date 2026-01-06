@@ -29,16 +29,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app, storage);
 
   // --- Shrine Routes ---
-  app.get("/api/shrines", async (req, res) => {
+  app.get("/api/shrines", async (req, res, next) => {
     try {
       const shrines = await storage.getShrines();
       res.json(shrines);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch shrines" });
+      next(error);
     }
   });
 
-  app.get("/api/shrines/:id", async (req, res) => {
+  app.get("/api/shrines/:id", async (req, res, next) => {
     try {
       const shrine = await storage.getShrine(req.params.id);
       if (!shrine) {
@@ -46,7 +46,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(shrine);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch shrine" });
+      next(error);
     }
   });
 
@@ -61,17 +61,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Get Visits
-  app.get("/api/visits", requireAuth, async (req, res) => {
+  app.get("/api/visits", requireAuth, async (req, res, next) => {
     try {
       const visits = await storage.getVisits(req.user!.id);
       res.json(visits);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch visits" });
+      next(error);
     }
   });
 
   // Create Visit (Check-in)
-  app.post("/api/visits", requireAuth, validateRequest(insertVisitSchema), async (req, res) => {
+  app.post("/api/visits", requireAuth, validateRequest(insertVisitSchema), async (req, res, next) => {
     try {
       const { shrineId, notes, latitude, longitude, accuracy } = req.body;
 
@@ -110,13 +110,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.status(201).json(visit);
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Failed to create visit" });
+      next(error);
     }
   });
 
   // Update Visit Note
-  app.patch("/api/visits/:id", requireAuth, validateRequest(z.object({ notes: z.string() })), async (req, res) => {
+  app.patch("/api/visits/:id", requireAuth, validateRequest(z.object({ notes: z.string() })), async (req, res, next) => {
     try {
       const visitId = parseInt(req.params.id);
       const { notes } = req.body;
@@ -127,17 +126,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(visit);
     } catch (error) {
-      res.status(500).json({ message: "Failed to update visit" });
+      next(error);
     }
   });
 
   // Get Journey Status
-  app.get("/api/journey", requireAuth, async (req, res) => {
+  app.get("/api/journey", requireAuth, async (req, res, next) => {
     try {
       const journey = await storage.getJourney(req.user!.id);
       res.json(journey || { status: "not_started", currentShrineOrder: 0 });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch journey" });
+      next(error);
     }
   });
 

@@ -12,7 +12,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <div className="relative h-[600px] flex items-center justify-center text-white overflow-hidden">
+      <div className="relative h-[100dvh] md:h-[600px] flex items-center justify-center text-white overflow-hidden">
         <div className="absolute inset-0 z-0 bg-muted">
           {!imgLoaded && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
@@ -21,25 +21,26 @@ export default function HomePage() {
           )}
           <img
             src="https://images.unsplash.com/photo-1582510003544-4d00b7f74220?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80"
-            alt="Arunachala Hill"
-            className={`w-full h-full object-cover transition-opacity duration-700 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+            alt="Arunachala Hill, a sacred mountain in Tamil Nadu, India, symbolizing Lord Shiva."
+            // Removed lazy loading for Hero image to improve LCP
+            className={`w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
             onLoad={() => setImgLoaded(true)}
           />
-          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-background" />
         </div>
 
-        <div className="relative z-10 text-center space-y-8 max-w-3xl px-4">
+        <div className="relative z-10 text-center space-y-6 max-w-4xl px-4 mt-[-60px] md:mt-0">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tight drop-shadow-md">
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight drop-shadow-2xl">
               Sacred Steps
             </h1>
           </motion.div>
           <motion.p
-            className="text-xl md:text-2xl font-light opacity-90 max-w-2xl mx-auto drop-shadow-sm"
+            className="text-lg md:text-2xl font-light opacity-90 max-w-2xl mx-auto drop-shadow-md leading-relaxed"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4, duration: 0.8 }}
@@ -56,22 +57,18 @@ export default function HomePage() {
           >
             {user ? (
                <Link href="/dashboard">
-                <Button size="lg" className="text-lg px-8 shadow-xl hover:scale-105 transition-all duration-300 bg-primary/90 hover:bg-primary">
+                <Button size="lg" className="h-12 text-lg px-10 shadow-xl hover:scale-105 transition-all duration-300 bg-primary hover:bg-primary/90 rounded-full font-medium">
                   Continue Journey
                 </Button>
               </Link>
             ) : (
               <Link href="/auth">
-                <Button size="lg" className="text-lg px-8 shadow-xl hover:scale-105 transition-all duration-300 bg-primary/90 hover:bg-primary">
+                <Button size="lg" className="h-12 text-lg px-10 shadow-xl hover:scale-105 transition-all duration-300 bg-primary hover:bg-primary/90 rounded-full font-medium">
                   Start Pilgrimage
                 </Button>
               </Link>
             )}
-            <Link href="/api/shrines" target="_blank">
-               <Button variant="outline" size="lg" className="text-lg px-8 bg-white/10 text-white border-white/50 hover:bg-white/20 hover:border-white transition-all duration-300 backdrop-blur-sm">
-                View API
-              </Button>
-            </Link>
+            {/* Removed generic API button for cleaner UX */}
           </motion.div>
         </div>
       </div>

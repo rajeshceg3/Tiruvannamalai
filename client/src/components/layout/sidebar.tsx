@@ -13,7 +13,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
   const navItems = [
     { href: "/dashboard", icon: Home, label: "Dashboard" },
     { href: "/pathfinder", icon: Compass, label: "Pathfinder" },
-    // { href: "/journal", icon: BookOpen, label: "Journal" },
+    { href: "/debrief", icon: BookOpen, label: "Debrief" },
   ];
 
   return (
