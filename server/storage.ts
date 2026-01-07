@@ -14,7 +14,7 @@ import {
   groupMembers,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, gt } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 export interface IStorage {
@@ -99,14 +99,14 @@ export class MemStorage implements IStorage {
 
   // Visits
   async createVisit(userId: number, shrineId: string, notes?: string, isVirtual: boolean = true, verifiedLocation?: any): Promise<Visit> {
-    const existingVisit = Array.from(this.visits.values()).find(
-      (v) => v.userId === userId && v.shrineId === shrineId,
+    // Check if recently visited (e.g., within last 10 minutes)
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    const existingRecentVisit = Array.from(this.visits.values()).find(
+      (v) => v.userId === userId && v.shrineId === shrineId && v.visitedAt > tenMinutesAgo,
     );
 
-    if (existingVisit) {
-      // If re-visiting and the new visit is physical, update it?
-      // For now, let's just return existing.
-      return existingVisit;
+    if (existingRecentVisit) {
+      return existingRecentVisit;
     }
 
     const id = this.currentVisitId++;
@@ -149,7 +149,9 @@ export class MemStorage implements IStorage {
     const existing = await this.getJourney(userId);
 
     if (existing) {
-      // Only update if the new order is greater than the current one (prevent regression)
+      // Allow re-visiting or updating progress. If new order is greater, update.
+      // If same or less, we generally don't revert progress, but if it's a new "round", we might?
+      // For now, keep "monotonic" logic but ensure we don't break if someone visits an old shrine.
       if (currentShrineOrder > existing.currentShrineOrder) {
         const updated = { ...existing, currentShrineOrder };
         this.journeys.set(existing.id, updated);
@@ -255,13 +257,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createVisit(userId: number, shrineId: string, notes?: string, isVirtual: boolean = true, verifiedLocation?: any): Promise<Visit> {
-    // Check if exists first to avoid duplicates (though UI should handle this)
-    const [existing] = await db.select().from(visits).where(
-        and(eq(visits.userId, userId), eq(visits.shrineId, shrineId))
+    // Check if recently visited (e.g., within last 10 minutes)
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    const [existingRecent] = await db.select().from(visits).where(
+        and(
+            eq(visits.userId, userId),
+            eq(visits.shrineId, shrineId),
+            gt(visits.visitedAt, tenMinutesAgo)
+        )
     );
 
-    if (existing) {
-        return existing;
+    if (existingRecent) {
+        return existingRecent;
     }
 
     const [visit] = await db.insert(visits).values({

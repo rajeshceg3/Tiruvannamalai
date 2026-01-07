@@ -23,6 +23,9 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Export the session parser so it can be used by WebSocket upgrades
+export let sessionParser: any;
+
 export function setupAuth(app: Express, storage: IStorage) {
   const sessionSecret = process.env.SESSION_SECRET;
   if (!sessionSecret) {
@@ -55,6 +58,7 @@ export function setupAuth(app: Express, storage: IStorage) {
     cookie: {
       maxAge: 24 * 60 * 60 * 1000, // 1 day
       secure: app.get("env") === "production",
+      sameSite: "lax", // Explicitly set SameSite to Lax for CSRF protection
     },
     store,
   };
@@ -63,7 +67,8 @@ export function setupAuth(app: Express, storage: IStorage) {
     app.set("trust proxy", 1);
   }
 
-  app.use(session(sessionSettings));
+  sessionParser = session(sessionSettings);
+  app.use(sessionParser);
   app.use(passport.initialize());
   app.use(passport.session());
 

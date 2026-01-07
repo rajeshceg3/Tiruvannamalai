@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth } from "./auth";
+import { setupAuth, sessionParser } from "./auth";
 import { validateRequest } from "./middleware/validation";
 import { insertVisitSchema, insertGroupSchema, joinGroupSchema } from "@shared/schema";
 import { z } from "zod";
@@ -203,20 +203,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   httpServer.on("upgrade", (request, socket, head) => {
     if (request.url === "/ws") {
-      // Use the existing session middleware to parse the session
-      // Since we don't have direct access to the app's middleware stack here easily without refactoring,
-      // and this is a specialized "mission critical" fix:
+      sessionParser(request as any, {} as any, () => {
+        const req = request as any;
+        if (!req.session || !req.session.passport || !req.session.passport.user) {
+          socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+          socket.destroy();
+          return;
+        }
 
-      // We will skip strict session parsing for this specific MVP constraint environment
-      // but we will remove the blind trust of `userId` in the message.
-      // Instead, we will require the client to prove identity or just accept that
-      // for this iteration, we acknowledge the limitation but fix the crash.
-
-      // WAIT: I can import the session parser if I export it, but it's internal to setupAuth.
-      // Let's implement a standard `handleUpgrade` that passes the connection.
-
-      wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit("connection", ws, request);
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          // Attach user ID to the socket
+          (ws as any).userId = req.session.passport.user;
+          wss.emit("connection", ws, request);
+        });
       });
     }
   });
@@ -226,28 +225,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   wss.on("connection", (ws, req) => {
     let currentGroupId: number | null = null;
-    let currentUserId: number | null = null;
+    // We trust this because we set it in the upgrade handler
+    const currentUserId = (ws as any).userId as number;
 
     ws.on("message", async (data) => {
       try {
         const message = JSON.parse(data.toString());
 
         if (message.type === "join_group") {
-          const { userId, groupId } = message;
+          const { groupId } = message; // We ignore claimed userId
 
-          // SECURITY IMPROVEMENT:
-          // In a full production env, we would validate `req` session here.
-          // For now, we double check that the claimed userId *is* in the claimed group in the DB.
-          // This prevents arbitrary users from listening to arbitrary groups,
-          // though it doesn't prevent impersonation of a member *of that group* without session checks.
-          // Given the constraints, this logic remains, but we add a check.
+          // Validate user membership in the requested group
+          const member = await storage.getUserGroup(currentUserId);
 
-          const member = await storage.getUserGroup(userId);
-
-          // Strict check: User MUST be in the group they are trying to join
+          // User MUST be in the group they are trying to join
           if (member && member.id === groupId) {
             currentGroupId = groupId;
-            currentUserId = userId;
 
             if (!groupClients.has(groupId)) {
               groupClients.set(groupId, new Set());
@@ -257,18 +250,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Broadcast join
             broadcastToGroup(groupId, {
                 type: "member_update",
-                userId,
+                userId: currentUserId,
                 status: "online"
             });
           } else {
-             // Invalid attempt, close connection
+             // Invalid attempt, close connection or ignore
              ws.close();
           }
         } else if (message.type === "location_update" && currentGroupId) {
           // Broadcast location to others in group
           broadcastToGroup(currentGroupId, {
             type: "location_update",
-            userId: currentUserId,
+            userId: currentUserId, // Use authenticated ID
             location: message.location // { lat, lng, timestamp }
           }, ws); // Exclude sender
         }
