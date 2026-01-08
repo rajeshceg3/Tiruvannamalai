@@ -88,10 +88,10 @@ function VisitCard({ visit, shrine }: { visit: Visit, shrine: Shrine }) {
   return (
     <Card className="mb-4 overflow-hidden">
       <div className="flex flex-col md:flex-row">
-        <div className="w-full md:w-32 h-32 md:h-auto overflow-hidden">
+        <div className="w-full md:w-32 h-32 md:h-auto overflow-hidden relative bg-muted">
           <img
             src={shrine.imageUrl}
-            alt={shrine.name}
+            alt={`View of ${shrine.name}`}
             className="w-full h-full object-cover"
             loading="lazy"
           />
@@ -216,13 +216,13 @@ export default function DashboardPage() {
       const previousJourney = queryClient.getQueryData<Journey>(["/api/journey"]);
 
       // Optimistic Update for Visits (Add temporary visit)
-      const shrine = shrines.find(s => s.id === shrineId);
+      const shrine = shrines?.find(s => s.id === shrineId);
       if (shrine) {
           const optimisticVisit: Visit = {
             id: -1, // Temporary ID
             userId: user?.id || 0,
             shrineId: shrine.id,
-            visitedAt: new Date().toISOString(),
+            visitedAt: new Date(), // Date object is compatible with Visit type in frontend usage (drizzle returns Date objects)
             notes: null,
             isVirtual: true,
             verifiedLocation: null

@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Users, MapPin, Radio, Copy, Check } from "lucide-react";
+import { Loader2, Users, MapPin, Radio, Copy, Check, AlertCircle, HeartPulse, Activity } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { motion, AnimatePresence } from "framer-motion";
+import { Sidebar } from "@/components/layout/sidebar";
 
 type GroupMember = {
   id: number;
@@ -39,9 +41,11 @@ export default function GroupCommand() {
     queryKey: ["/api/groups/current"],
   });
 
-  // Real-time location/status map
+  // Real-time states
   const [memberLocations, setMemberLocations] = useState<Record<number, any>>({});
   const [memberStatus, setMemberStatus] = useState<Record<number, string>>({});
+  const [memberBeacons, setMemberBeacons] = useState<Record<number, string>>({}); // SOS, REGROUP, etc.
+  const [personalStatus, setPersonalStatus] = useState<"ok" | "sos" | "regroup">("ok");
 
   useEffect(() => {
     if (group && user) {
@@ -53,9 +57,23 @@ export default function GroupCommand() {
 
       const unsubMem = socketClient.on("member_update", (data) => {
         setMemberStatus((prev) => ({ ...prev, [data.userId]: data.status }));
-        // Refresh group data on join/leave potentially
         if (data.type === "member_update") {
              queryClient.invalidateQueries({ queryKey: ["/api/groups/current"] });
+        }
+      });
+
+      const unsubBeacon = socketClient.on("beacon_signal", (data) => {
+        setMemberBeacons((prev) => ({ ...prev, [data.userId]: data.signal }));
+
+        // Alert logic if SOS
+        if (data.signal === "SOS") {
+             const member = group.members.find(m => m.userId === data.userId);
+             toast({
+                 title: "EMERGENCY BEACON",
+                 description: `${member?.user.username || "A member"} has signaled SOS!`,
+                 variant: "destructive",
+                 duration: 10000
+             });
         }
       });
 
@@ -75,6 +93,7 @@ export default function GroupCommand() {
       return () => {
         unsubLoc();
         unsubMem();
+        unsubBeacon();
         clearInterval(interval);
       };
     }
@@ -87,6 +106,20 @@ export default function GroupCommand() {
       setTimeout(() => setCopied(false), 2000);
       toast({ title: "Copied!", description: "Invite code copied to clipboard." });
     }
+  };
+
+  const broadcastBeacon = (signal: "SOS" | "REGROUP" | "MOVING") => {
+      // Send via socket
+      // We need to implement this method in socketClient first, or use raw send if possible.
+      // But assuming we can:
+      socketClient.sendBeacon(signal);
+      setPersonalStatus(signal === "SOS" ? "sos" : signal === "REGROUP" ? "regroup" : "ok");
+
+      toast({
+          title: `Beacon Broadcast: ${signal}`,
+          description: "Squad has been alerted.",
+          variant: signal === "SOS" ? "destructive" : "default"
+      });
   };
 
   if (isLoading) {
@@ -102,71 +135,126 @@ export default function GroupCommand() {
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Yatra Command</h1>
-          <p className="text-muted-foreground mt-1">
-            Tactical coordination for your pilgrimage squad.
-          </p>
-        </div>
+    <div className="flex h-screen bg-background">
+      <Sidebar className="hidden md:flex" />
+      <main className="flex-1 overflow-auto p-4 md:p-8">
+        <div className="max-w-6xl mx-auto space-y-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                <h1 className="text-3xl font-bold tracking-tight">Squadron Overwatch</h1>
+                <p className="text-muted-foreground mt-1">
+                    Real-time tactical coordination for group {group.name}.
+                </p>
+                </div>
 
-        <Card className="w-full md:w-auto bg-muted/50 border-dashed">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div>
-              <div className="text-xs font-medium text-muted-foreground uppercase">Invite Code</div>
-              <div className="text-2xl font-mono font-bold tracking-widest">{group.code}</div>
+                <div className="flex gap-4 items-center">
+                    <Card className="bg-muted/50 border-dashed">
+                        <CardContent className="p-3 flex items-center gap-4">
+                            <div>
+                            <div className="text-xs font-medium text-muted-foreground uppercase">Invite Code</div>
+                            <div className="text-xl font-mono font-bold tracking-widest">{group.code}</div>
+                            </div>
+                            <Button size="icon" variant="ghost" onClick={copyCode}>
+                            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
-            <Button size="icon" variant="ghost" onClick={copyCode}>
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Squad List */}
-        <Card className="md:col-span-2 lg:col-span-3">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Squad Members ({group.members?.length || 0})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {group.members?.map((member) => {
-                const isOnline = memberStatus[member.userId] === "online" || member.userId === user?.id; // Self is always online locally
-                const location = memberLocations[member.userId];
+            {/* Beacon Controls */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Button
+                    size="lg"
+                    variant={personalStatus === "sos" ? "destructive" : "outline"}
+                    className="h-24 text-lg border-2"
+                    onClick={() => broadcastBeacon("SOS")}
+                >
+                    <AlertCircle className="mr-2 h-6 w-6" />
+                    SOS / EMERGENCY
+                </Button>
+                <Button
+                    size="lg"
+                    variant={personalStatus === "regroup" ? "default" : "outline"}
+                    className="h-24 text-lg border-2"
+                    onClick={() => broadcastBeacon("REGROUP")}
+                >
+                    <Users className="mr-2 h-6 w-6" />
+                    REQUEST REGROUP
+                </Button>
+                <Button
+                    size="lg"
+                    variant="outline"
+                    className="h-24 text-lg border-2"
+                    onClick={() => broadcastBeacon("MOVING")}
+                >
+                    <Activity className="mr-2 h-6 w-6" />
+                    MOVING / ACTIVE
+                </Button>
+            </div>
 
-                return (
-                  <div key={member.id} className="flex items-start space-x-4 p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
-                    <Avatar>
-                        {/* Placeholder initials */}
-                      <AvatarFallback>{member.user.username.slice(0, 2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium leading-none">{member.user.username}</p>
-                        <Badge variant={isOnline ? "default" : "secondary"} className={isOnline ? "bg-green-500 hover:bg-green-600" : ""}>
-                          {isOnline ? "Active" : "Offline"}
-                        </Badge>
-                      </div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-1 mt-2">
-                         <MapPin className="h-3 w-3" />
-                         {location
-                           ? `Last signal: ${new Date(location.timestamp).toLocaleTimeString()}`
-                           : "No signal yet"}
-                      </div>
-                       {/* In a real map, we'd show distance/bearing here */}
+            {/* Squad List */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                    <Radio className={`h-5 w-5 ${Object.keys(memberLocations).length > 0 ? 'text-green-500 animate-pulse' : ''}`} />
+                    Live Telemetry
+                    </CardTitle>
+                    <CardDescription>
+                        Real-time status of all {group.members.length} operators.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                    {group.members?.map((member) => {
+                        const isOnline = memberStatus[member.userId] === "online" || member.userId === user?.id;
+                        const location = memberLocations[member.userId];
+                        const beacon = memberBeacons[member.userId];
+                        const isSelf = member.userId === user?.id;
+
+                        return (
+                        <div key={member.id} className={`flex items-center justify-between p-4 rounded-lg border ${beacon === "SOS" ? 'bg-red-500/10 border-red-500' : 'bg-card'}`}>
+                            <div className="flex items-center space-x-4">
+                                <Avatar className="h-10 w-10 border-2 border-primary/20">
+                                    <AvatarFallback>{member.user.username.slice(0, 2).toUpperCase()}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <div className="font-semibold flex items-center gap-2">
+                                        {member.user.username}
+                                        {isSelf && <Badge variant="outline" className="text-xs">YOU</Badge>}
+                                    </div>
+                                    <div className="flex items-center text-xs text-muted-foreground mt-1">
+                                        <Badge variant={isOnline ? "secondary" : "outline"} className={`mr-2 ${isOnline ? 'text-green-600 bg-green-50' : ''}`}>
+                                            {isOnline ? "ONLINE" : "OFFLINE"}
+                                        </Badge>
+                                        {location && (
+                                            <span className="flex items-center">
+                                                <MapPin className="h-3 w-3 mr-1" />
+                                                Lat: {location.lat.toFixed(4)}, Lng: {location.lng.toFixed(4)}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                {beacon && (
+                                    <Badge variant={beacon === "SOS" ? "destructive" : "secondary"} className="animate-pulse">
+                                        {beacon}
+                                    </Badge>
+                                )}
+                                {!beacon && isOnline && (
+                                    <HeartPulse className="h-4 w-4 text-green-500/50" />
+                                )}
+                            </div>
+                        </div>
+                        );
+                    })}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                </CardContent>
+            </Card>
+        </div>
+      </main>
     </div>
   );
 }
@@ -198,8 +286,7 @@ function NoGroupState() {
       queryClient.invalidateQueries({ queryKey: ["/api/groups/current"] });
       toast({ title: "Joined Squad", description: "You have successfully linked with the group." });
     },
-    onError: (e: any) => { // Use 'any' or specific error type if known from apiRequest
-        // Extract message safely
+    onError: (e: any) => {
         const message = e.message || "Failed to join group";
         toast({ title: "Connection Failed", description: message, variant: "destructive" });
     }
@@ -210,7 +297,7 @@ function NoGroupState() {
   const [code, setCode] = useState("");
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4">

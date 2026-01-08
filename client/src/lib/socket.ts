@@ -52,6 +52,12 @@ export class SocketClient {
     }
   }
 
+  public sendBeacon(signal: "SOS" | "REGROUP" | "MOVING") {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: "beacon_signal", signal }));
+    }
+  }
+
   public on(type: string, callback: (data: any) => void) {
     if (!this.listeners.has(type)) {
       this.listeners.set(type, new Set());

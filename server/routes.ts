@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, sessionParser } from "./auth";
 import { validateRequest } from "./middleware/validation";
-import { insertVisitSchema, insertGroupSchema, joinGroupSchema } from "@shared/schema";
+import { insertVisitSchema, insertGroupSchema, joinGroupSchema, LOCATION_VERIFICATION_THRESHOLD } from "@shared/schema";
 import { z } from "zod";
 import "./types";
 import rateLimit from "express-rate-limit";
@@ -19,7 +19,7 @@ const apiLimiter = rateLimit({
   message: "Too many requests from this IP, please try again later."
 });
 
-const VERIFICATION_THRESHOLD_METERS = 200; // Distance tolerance for check-in
+const VERIFICATION_THRESHOLD_METERS = LOCATION_VERIFICATION_THRESHOLD; // Distance tolerance for check-in
 const MAX_ACCURACY_THRESHOLD_METERS = 100; // Minimum GPS accuracy required
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -264,6 +264,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             userId: currentUserId, // Use authenticated ID
             location: message.location // { lat, lng, timestamp }
           }, ws); // Exclude sender
+        } else if (message.type === "beacon_signal" && currentGroupId) {
+          // Broadcast emergency/status beacon
+          broadcastToGroup(currentGroupId, {
+            type: "beacon_signal",
+            userId: currentUserId,
+            signal: message.signal // e.g. "SOS", "REGROUP", "MOVING"
+          });
+        } else if (message.type === "status_update" && currentGroupId) {
+           // Broadcast general status
+           broadcastToGroup(currentGroupId, {
+             type: "status_update",
+             userId: currentUserId,
+             status: message.status // e.g. "safe", "tired", "resting"
+           });
         }
       } catch (e) {
         console.error("WS Error:", e);
