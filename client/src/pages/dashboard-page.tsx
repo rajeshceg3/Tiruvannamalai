@@ -47,8 +47,40 @@ function VisitCard({ visit, shrine }: { visit: Visit, shrine: Shrine }) {
       const res = await apiRequest("PATCH", `/api/visits/${visit.id}`, { notes: newNotes });
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async (newNotes) => {
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: ["/api/visits"] });
+
+      // Snapshot the previous value
+      const previousVisits = queryClient.getQueryData<Visit[]>(["/api/visits"]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData<Visit[]>(["/api/visits"], (old) => {
+        if (!old) return [];
+        return old.map((v) =>
+          v.id === visit.id ? { ...v, notes: newNotes } : v
+        );
+      });
+
+      // Return a context object with the snapshotted value
+      return { previousVisits };
+    },
+    onError: (err, newNotes, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousVisits) {
+        queryClient.setQueryData(["/api/visits"], context.previousVisits);
+      }
+      toast({
+        title: "Update failed",
+        description: "Your journal entry could not be saved.",
+        variant: "destructive"
+      });
+    },
+    onSettled: () => {
+      // Always refetch after error or success:
       queryClient.invalidateQueries({ queryKey: ["/api/visits"] });
+    },
+    onSuccess: () => {
       toast({ title: "Journal updated" });
     },
   });
@@ -176,9 +208,60 @@ export default function DashboardPage() {
       const res = await apiRequest("POST", "/api/visits", { shrineId });
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async (shrineId) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/visits"] });
+      await queryClient.cancelQueries({ queryKey: ["/api/journey"] });
+
+      const previousVisits = queryClient.getQueryData<Visit[]>(["/api/visits"]);
+      const previousJourney = queryClient.getQueryData<Journey>(["/api/journey"]);
+
+      // Optimistic Update for Visits (Add temporary visit)
+      const shrine = shrines.find(s => s.id === shrineId);
+      if (shrine) {
+          const optimisticVisit: Visit = {
+            id: -1, // Temporary ID
+            userId: user?.id || 0,
+            shrineId: shrine.id,
+            visitedAt: new Date().toISOString(),
+            notes: null,
+            isVirtual: true,
+            verifiedLocation: null
+          };
+
+          queryClient.setQueryData<Visit[]>(["/api/visits"], (old) => {
+            return old ? [...old, optimisticVisit] : [optimisticVisit];
+          });
+
+          // Optimistic Update for Journey
+          if (journey) {
+               queryClient.setQueryData<Journey>(["/api/journey"], (old) => {
+                    if (!old) return old;
+                    // Assuming monotonic progress, but we just increment for visual feedback
+                    return { ...old, currentShrineOrder: Math.max(old.currentShrineOrder, shrine.order) };
+               });
+          }
+      }
+
+      return { previousVisits, previousJourney };
+    },
+    onError: (err, shrineId, context) => {
+      if (context?.previousVisits) {
+        queryClient.setQueryData(["/api/visits"], context.previousVisits);
+      }
+      if (context?.previousJourney) {
+        queryClient.setQueryData(["/api/journey"], context.previousJourney);
+      }
+      toast({
+        title: "Check-in failed",
+        description: "Could not record your visit. Please try again.",
+        variant: "destructive"
+      });
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/visits"] });
       queryClient.invalidateQueries({ queryKey: ["/api/journey"] });
+    },
+    onSuccess: () => {
       toast({ title: "Checked in!", description: "May this step bring you peace." });
     },
   });
