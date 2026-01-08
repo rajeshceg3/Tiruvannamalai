@@ -55,7 +55,6 @@ export default function Router() {
         <ProtectedRoute path="/dashboard" component={DashboardPage} />
         <ProtectedRoute path="/pathfinder" component={PathfinderPage} />
         <ProtectedRoute path="/group-command" component={GroupCommandPage} />
-        <ProtectedRoute path="/journey" component={DashboardPage} />
         <ProtectedRoute path="/debrief" component={MissionDebriefPage} />
 
         <Route component={NotFound} />

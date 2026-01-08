@@ -21,6 +21,8 @@ export const shrineSchema = z.object({
 
 export type Shrine = z.infer<typeof shrineSchema>;
 
+export const LOCATION_VERIFICATION_THRESHOLD = 200; // meters
+
 export const shrineData: Shrine[] = [
   {
     id: "indra-lingam",
