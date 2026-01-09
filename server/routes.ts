@@ -89,7 +89,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (latitude !== undefined && longitude !== undefined) {
         const distance = calculateDistance(latitude, longitude, shrine.latitude, shrine.longitude);
 
-        const isAccurateEnough = accuracy === undefined || accuracy <= MAX_ACCURACY_THRESHOLD_METERS;
+        // Strict accuracy check: accuracy must be provided and within threshold
+        const isAccurateEnough = accuracy !== undefined && accuracy <= MAX_ACCURACY_THRESHOLD_METERS;
         const isInRange = distance <= VERIFICATION_THRESHOLD_METERS;
 
         if (isAccurateEnough && isInRange) {

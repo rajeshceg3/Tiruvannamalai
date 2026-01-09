@@ -129,7 +129,11 @@ export default function AuthPage() {
 
       <div className="hidden lg:flex flex-col justify-center p-12 bg-primary/5 text-primary-foreground relative overflow-hidden">
         <div className="absolute inset-0 bg-black/40 z-10" />
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1582510003544-4d00b7f74220?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80')] bg-cover bg-center" />
+        <img
+          src="https://images.unsplash.com/photo-1582510003544-4d00b7f74220?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80"
+          alt="A serene view of Arunachala Hill in the early morning mist"
+          className="absolute inset-0 w-full h-full object-cover object-center"
+        />
 
         <div className="relative z-20 max-w-lg mx-auto text-white space-y-6">
           <h2 className="text-4xl font-bold leading-tight">"It is not the feet that walk the path, but the heart that beats the rhythm."</h2>
