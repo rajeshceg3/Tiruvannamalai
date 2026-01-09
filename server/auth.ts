@@ -45,6 +45,10 @@ export function setupAuth(app: Express, storage: IStorage) {
       createTableIfMissing: true,
     });
   } else {
+    // In production, we must have a database for sessions.
+    if (app.get("env") === "production") {
+      throw new Error("FATAL: DATABASE_URL is not set. Cannot use MemoryStore in production.");
+    }
     const MemoryStore = createMemoryStore(session);
     store = new MemoryStore({
       checkPeriod: 86400000,
