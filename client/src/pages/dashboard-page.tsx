@@ -134,13 +134,47 @@ function VisitCard({ visit, shrine }: { visit: Visit, shrine: Shrine }) {
   );
 }
 
-function ShrineList({ shrines, visits, onCheckIn }: { shrines: Shrine[], visits: Visit[], onCheckIn: (id: string) => void }) {
+function ShrineList({ shrines, visits, onCheckIn }: { shrines: Shrine[], visits: Visit[], onCheckIn: (id: string, location?: GeolocationCoordinates) => void }) {
   const visitedIds = new Set(visits.map(v => v.shrineId));
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const handleCheckIn = (shrineId: string) => {
+    setVerifyingId(shrineId);
+    if (!navigator.geolocation) {
+      toast({
+        title: "Geolocation not supported",
+        description: "Checking in virtually.",
+      });
+      onCheckIn(shrineId);
+      setVerifyingId(null);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        onCheckIn(shrineId, position.coords);
+        setVerifyingId(null);
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        toast({
+          title: "Location access denied",
+          description: "Checking in virtually. Enable location for physical verification.",
+          variant: "destructive"
+        });
+        onCheckIn(shrineId);
+        setVerifyingId(null);
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+    );
+  };
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {shrines.map((shrine) => {
         const isVisited = visitedIds.has(shrine.id);
+        const isVerifying = verifyingId === shrine.id;
 
         return (
           <motion.div
@@ -169,8 +203,12 @@ function ShrineList({ shrines, visits, onCheckIn }: { shrines: Shrine[], visits:
                   {shrine.description}
                 </p>
                 {!isVisited && (
-                  <Button onClick={() => onCheckIn(shrine.id)} className="w-full mt-auto">
-                    Check In
+                  <Button
+                    onClick={() => handleCheckIn(shrine.id)}
+                    className="w-full mt-auto"
+                    disabled={isVerifying}
+                  >
+                    {isVerifying ? "Verifying Location..." : "Check In"}
                   </Button>
                 )}
                 {isVisited && (
@@ -204,11 +242,17 @@ export default function DashboardPage() {
   });
 
   const checkInMutation = useMutation({
-    mutationFn: async (shrineId: string) => {
-      const res = await apiRequest("POST", "/api/visits", { shrineId });
+    mutationFn: async ({ shrineId, location }: { shrineId: string, location?: GeolocationCoordinates }) => {
+      const payload: any = { shrineId };
+      if (location) {
+        payload.latitude = location.latitude;
+        payload.longitude = location.longitude;
+        payload.accuracy = location.accuracy;
+      }
+      const res = await apiRequest("POST", "/api/visits", payload);
       return res.json();
     },
-    onMutate: async (shrineId) => {
+    onMutate: async ({ shrineId, location }) => {
       await queryClient.cancelQueries({ queryKey: ["/api/visits"] });
       await queryClient.cancelQueries({ queryKey: ["/api/journey"] });
 
@@ -224,8 +268,13 @@ export default function DashboardPage() {
             shrineId: shrine.id,
             visitedAt: new Date(), // Date object is compatible with Visit type in frontend usage (drizzle returns Date objects)
             notes: null,
-            isVirtual: true,
-            verifiedLocation: null
+            isVirtual: !location,
+            verifiedLocation: location ? {
+              latitude: location.latitude,
+              longitude: location.longitude,
+              accuracy: location.accuracy,
+              timestamp: new Date().toISOString()
+            } : null
           };
 
           queryClient.setQueryData<Visit[]>(["/api/visits"], (old) => {
@@ -244,7 +293,7 @@ export default function DashboardPage() {
 
       return { previousVisits, previousJourney };
     },
-    onError: (err, shrineId, context) => {
+    onError: (err, variables, context) => {
       if (context?.previousVisits) {
         queryClient.setQueryData(["/api/visits"], context.previousVisits);
       }
@@ -261,8 +310,12 @@ export default function DashboardPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/visits"] });
       queryClient.invalidateQueries({ queryKey: ["/api/journey"] });
     },
-    onSuccess: () => {
-      toast({ title: "Checked in!", description: "May this step bring you peace." });
+    onSuccess: (data, variables) => {
+      if (variables.location) {
+         toast({ title: "Location Verified!", description: "You have physically checked in." });
+      } else {
+         toast({ title: "Checked in!", description: "Virtual visit recorded." });
+      }
     },
   });
 
@@ -316,7 +369,7 @@ export default function DashboardPage() {
                 <ShrineList
                   shrines={shrines}
                   visits={visits}
-                  onCheckIn={(id) => checkInMutation.mutate(id)}
+                  onCheckIn={(id, location) => checkInMutation.mutate({ shrineId: id, location })}
                 />
               )}
             </div>
