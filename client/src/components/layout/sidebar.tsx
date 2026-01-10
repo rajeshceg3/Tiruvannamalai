@@ -18,7 +18,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
   ];
 
   return (
-    <div className={cn("pb-12 w-64 border-r bg-sidebar", className)} {...props}>
+    <div className={cn("pb-12 w-64 border-r bg-sidebar text-sidebar-foreground", className)} {...props}>
       <div className="space-y-4 py-4">
         <div className="px-3 py-2">
           <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">

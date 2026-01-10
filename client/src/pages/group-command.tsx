@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sidebar } from "@/components/layout/sidebar";
+import { MobileSidebar } from "@/components/layout/mobile-sidebar";
 
 type GroupMember = {
   id: number;
@@ -138,6 +139,10 @@ export default function GroupCommand() {
     <div className="flex h-screen bg-background">
       <Sidebar className="hidden md:flex" />
       <main className="flex-1 overflow-auto p-4 md:p-8">
+        <header className="md:hidden flex justify-between items-center mb-6">
+           <h1 className="text-xl font-bold">Sacred Steps</h1>
+           <MobileSidebar />
+        </header>
         <div className="max-w-6xl mx-auto space-y-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>

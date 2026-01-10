@@ -9,6 +9,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { MobileSidebar } from "@/components/layout/mobile-sidebar";
 
 export default function PathfinderPage() {
   const { toast } = useToast();
@@ -69,6 +70,11 @@ export default function PathfinderPage() {
       <Sidebar className="hidden md:flex" />
 
       <main className="flex-1 overflow-auto p-4 md:p-8 relative">
+        <header className="md:hidden flex justify-between items-center mb-6">
+           <h1 className="text-xl font-bold">Sacred Steps</h1>
+           <MobileSidebar />
+        </header>
+
         <div className="max-w-4xl mx-auto space-y-8">
 
           <div className="space-y-2">
