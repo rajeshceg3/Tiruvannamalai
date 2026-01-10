@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Visit, Shrine } from "@shared/schema";
 import { Sidebar } from "@/components/layout/sidebar";
+import { MobileSidebar } from "@/components/layout/mobile-sidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Award, MapPin, Footprints } from "lucide-react";
 import { motion } from "framer-motion";
@@ -43,6 +44,10 @@ export default function MissionDebriefPage() {
     <div className="flex h-screen bg-background">
       <Sidebar className="hidden md:flex" />
       <main className="flex-1 overflow-auto p-4 md:p-8">
+        <header className="md:hidden flex justify-between items-center mb-6">
+           <h1 className="text-xl font-bold">Sacred Steps</h1>
+           <MobileSidebar />
+        </header>
         <div className="max-w-4xl mx-auto space-y-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
