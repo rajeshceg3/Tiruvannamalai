@@ -50,3 +50,61 @@ export async function getCurrentGroup(req: Request, res: Response, next: NextFun
     next(error);
   }
 }
+
+export async function getSitReps(req: Request, res: Response, next: NextFunction) {
+  try {
+    const groupId = parseInt(req.params.groupId);
+    // Security check: Ensure user is a member of the group
+    const userGroup = await storage.getUserGroup(req.user!.id);
+    if (!userGroup || userGroup.id !== groupId) {
+        return res.status(403).json({ message: "Not authorized to view this group's SitReps" });
+    }
+
+    const sitreps = await storage.getSitReps(groupId);
+    res.json(sitreps);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createSitRep(req: Request, res: Response, next: NextFunction) {
+  try {
+    const groupId = parseInt(req.params.groupId);
+    const { content, type } = req.body;
+
+    // Security check
+    const userGroup = await storage.getUserGroup(req.user!.id);
+    if (!userGroup || userGroup.id !== groupId) {
+        return res.status(403).json({ message: "Not authorized" });
+    }
+
+    const sitrep = await storage.createSitRep(groupId, req.user!.id, content, type);
+    res.status(201).json(sitrep);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateGroupObjective(req: Request, res: Response, next: NextFunction) {
+  try {
+    const groupId = parseInt(req.params.groupId);
+    const { shrineId } = req.body;
+
+    // Security check
+    const userGroup = await storage.getUserGroup(req.user!.id);
+    if (!userGroup || userGroup.id !== groupId) {
+        return res.status(403).json({ message: "Not authorized" });
+    }
+
+    // Only creator can set objective? Or anyone? For now, allow any member.
+    // Ideally only leader (creator).
+    if (userGroup.creatorId !== req.user!.id) {
+        return res.status(403).json({ message: "Only the Squad Leader can set the tactical objective" });
+    }
+
+    const group = await storage.updateGroupObjective(groupId, shrineId);
+    res.json(group);
+  } catch (error) {
+    next(error);
+  }
+}

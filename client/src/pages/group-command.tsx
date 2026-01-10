@@ -1,17 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { socketClient } from "@/lib/socket";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Users, MapPin, Radio, Copy, Check, AlertCircle, HeartPulse, Activity } from "lucide-react";
+import { Loader2, Users, MapPin, Radio, Copy, Check, AlertCircle, HeartPulse, Activity, Target, MessageSquare, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { motion, AnimatePresence } from "framer-motion";
 import { Sidebar } from "@/components/layout/sidebar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { format } from "date-fns";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Shrine } from "@shared/schema";
 
 type GroupMember = {
   id: number;
@@ -20,6 +23,8 @@ type GroupMember = {
     username: string;
   };
   joinedAt: string;
+  lastStatus: string;
+  lastLocation: any;
 };
 
 type Group = {
@@ -28,6 +33,17 @@ type Group = {
   code: string;
   creatorId: number;
   members: GroupMember[];
+  activeObjective: string | null;
+};
+
+type SitRep = {
+  id: number;
+  content: string;
+  type: string;
+  createdAt: string;
+  user: {
+    username: string;
+  };
 };
 
 export default function GroupCommand() {
@@ -35,10 +51,26 @@ export default function GroupCommand() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Fetch current group
   const { data: group, isLoading } = useQuery<Group | null>({
     queryKey: ["/api/groups/current"],
+  });
+
+  const groupId = group?.id;
+
+  // Fetch SitReps
+  const { data: sitreps, isLoading: loadingSitreps } = useQuery<SitRep[]>({
+    queryKey: [`/api/groups/${groupId}/sitreps`],
+    enabled: !!groupId,
+    refetchInterval: 5000, // Polling fallback
+  });
+
+  // Fetch Shrines for objective setting
+  const { data: shrines } = useQuery<Shrine[]>({
+    queryKey: ["/api/shrines"],
+    enabled: !!groupId,
   });
 
   // Real-time states
@@ -46,6 +78,20 @@ export default function GroupCommand() {
   const [memberStatus, setMemberStatus] = useState<Record<number, string>>({});
   const [memberBeacons, setMemberBeacons] = useState<Record<number, string>>({}); // SOS, REGROUP, etc.
   const [personalStatus, setPersonalStatus] = useState<"ok" | "sos" | "regroup">("ok");
+
+  // Initialize from persisted data
+  useEffect(() => {
+    if (group) {
+        const initialStatus: Record<number, string> = {};
+        const initialLocs: Record<number, any> = {};
+        group.members.forEach(m => {
+            initialStatus[m.userId] = m.lastStatus || "ok";
+            if (m.lastLocation) initialLocs[m.userId] = m.lastLocation;
+        });
+        setMemberStatus(prev => ({...initialStatus, ...prev})); // Merge to keep live updates
+        setMemberLocations(prev => ({...initialLocs, ...prev}));
+    }
+  }, [group]);
 
   useEffect(() => {
     if (group && user) {
@@ -56,16 +102,18 @@ export default function GroupCommand() {
       });
 
       const unsubMem = socketClient.on("member_update", (data) => {
+        // Optimistically update status
         setMemberStatus((prev) => ({ ...prev, [data.userId]: data.status }));
-        if (data.type === "member_update") {
-             queryClient.invalidateQueries({ queryKey: ["/api/groups/current"] });
-        }
+        // Invalidate to refresh persistent state
+        queryClient.invalidateQueries({ queryKey: ["/api/groups/current"] });
       });
 
       const unsubBeacon = socketClient.on("beacon_signal", (data) => {
         setMemberBeacons((prev) => ({ ...prev, [data.userId]: data.signal }));
+        // Also update status
+        const status = data.signal === "SOS" ? "sos" : data.signal === "REGROUP" ? "regroup" : "ok";
+        setMemberStatus((prev) => ({ ...prev, [data.userId]: status }));
 
-        // Alert logic if SOS
         if (data.signal === "SOS") {
              const member = group.members.find(m => m.userId === data.userId);
              toast({
@@ -75,6 +123,16 @@ export default function GroupCommand() {
                  duration: 10000
              });
         }
+      });
+
+      const unsubSitRep = socketClient.on("new_sitrep", (data) => {
+          // Add new sitrep to list
+          queryClient.setQueryData<SitRep[]>([`/api/groups/${group.id}/sitreps`], (old) => {
+              if (!old) return [data.sitrep];
+              // Prevent duplicates if possible, though ID check handles it usually
+              if (old.find(s => s.id === data.sitrep.id)) return old;
+              return [data.sitrep, ...old];
+          });
       });
 
       // Simulate sending our location occasionally
@@ -94,6 +152,7 @@ export default function GroupCommand() {
         unsubLoc();
         unsubMem();
         unsubBeacon();
+        unsubSitRep();
         clearInterval(interval);
       };
     }
@@ -109,9 +168,6 @@ export default function GroupCommand() {
   };
 
   const broadcastBeacon = (signal: "SOS" | "REGROUP" | "MOVING") => {
-      // Send via socket
-      // We need to implement this method in socketClient first, or use raw send if possible.
-      // But assuming we can:
       socketClient.sendBeacon(signal);
       setPersonalStatus(signal === "SOS" ? "sos" : signal === "REGROUP" ? "regroup" : "ok");
 
@@ -120,6 +176,38 @@ export default function GroupCommand() {
           description: "Squad has been alerted.",
           variant: signal === "SOS" ? "destructive" : "default"
       });
+  };
+
+  const sitrepMutation = useMutation({
+      mutationFn: async (content: string) => {
+          if (!group) return;
+          const res = await apiRequest("POST", `/api/groups/${group.id}/sitreps`, { content, type: "INFO" });
+          return res.json();
+      },
+      onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/sitreps`] });
+      }
+  });
+
+  const objectiveMutation = useMutation({
+      mutationFn: async (shrineId: string) => {
+          if (!group) return;
+          const res = await apiRequest("PATCH", `/api/groups/${group.id}/objective`, { shrineId });
+          return res.json();
+      },
+      onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ["/api/groups/current"] });
+          toast({ title: "Objective Updated", description: "All squad members notified." });
+      }
+  });
+
+  const [sitrepInput, setSitrepInput] = useState("");
+
+  const sendSitRep = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!sitrepInput.trim()) return;
+      sitrepMutation.mutate(sitrepInput);
+      setSitrepInput("");
   };
 
   if (isLoading) {
@@ -134,17 +222,22 @@ export default function GroupCommand() {
     return <NoGroupState />;
   }
 
+  const activeShrine = shrines?.find(s => s.id === group.activeObjective);
+  const isLeader = group.creatorId === user?.id;
+
   return (
     <div className="flex h-screen bg-background">
       <Sidebar className="hidden md:flex" />
       <main className="flex-1 overflow-auto p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-8">
+            {/* Header Area */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                <h1 className="text-3xl font-bold tracking-tight">Squadron Overwatch</h1>
-                <p className="text-muted-foreground mt-1">
-                    Real-time tactical coordination for group {group.name}.
-                </p>
+                    <h1 className="text-3xl font-bold tracking-tight">Tactical Command Center</h1>
+                    <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline" className="text-muted-foreground">{group.name}</Badge>
+                        <span className="text-muted-foreground text-sm">Operation Active</span>
+                    </div>
                 </div>
 
                 <div className="flex gap-4 items-center">
@@ -162,97 +255,198 @@ export default function GroupCommand() {
                 </div>
             </div>
 
-            {/* Beacon Controls */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Button
-                    size="lg"
-                    variant={personalStatus === "sos" ? "destructive" : "outline"}
-                    className="h-24 text-lg border-2"
-                    onClick={() => broadcastBeacon("SOS")}
-                >
-                    <AlertCircle className="mr-2 h-6 w-6" />
-                    SOS / EMERGENCY
-                </Button>
-                <Button
-                    size="lg"
-                    variant={personalStatus === "regroup" ? "default" : "outline"}
-                    className="h-24 text-lg border-2"
-                    onClick={() => broadcastBeacon("REGROUP")}
-                >
-                    <Users className="mr-2 h-6 w-6" />
-                    REQUEST REGROUP
-                </Button>
-                <Button
-                    size="lg"
-                    variant="outline"
-                    className="h-24 text-lg border-2"
-                    onClick={() => broadcastBeacon("MOVING")}
-                >
-                    <Activity className="mr-2 h-6 w-6" />
-                    MOVING / ACTIVE
-                </Button>
-            </div>
+            {/* Tactical Dashboard Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-            {/* Squad List */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                    <Radio className={`h-5 w-5 ${Object.keys(memberLocations).length > 0 ? 'text-green-500 animate-pulse' : ''}`} />
-                    Live Telemetry
-                    </CardTitle>
-                    <CardDescription>
-                        Real-time status of all {group.members.length} operators.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                    {group.members?.map((member) => {
-                        const isOnline = memberStatus[member.userId] === "online" || member.userId === user?.id;
-                        const location = memberLocations[member.userId];
-                        const beacon = memberBeacons[member.userId];
-                        const isSelf = member.userId === user?.id;
+                {/* Left Column: Objectives & Beacons */}
+                <div className="lg:col-span-2 space-y-8">
 
-                        return (
-                        <div key={member.id} className={`flex items-center justify-between p-4 rounded-lg border ${beacon === "SOS" ? 'bg-red-500/10 border-red-500' : 'bg-card'}`}>
-                            <div className="flex items-center space-x-4">
-                                <Avatar className="h-10 w-10 border-2 border-primary/20">
-                                    <AvatarFallback>{member.user.username.slice(0, 2).toUpperCase()}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <div className="font-semibold flex items-center gap-2">
-                                        {member.user.username}
-                                        {isSelf && <Badge variant="outline" className="text-xs">YOU</Badge>}
+                    {/* Mission Objective */}
+                    <Card className="border-l-4 border-l-primary">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Target className="h-5 w-5" />
+                                Mission Objective
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex flex-col md:flex-row gap-6 items-center">
+                                <div className="flex-1">
+                                    {activeShrine ? (
+                                        <div className="flex items-center gap-4">
+                                            <div className="text-4xl">{activeShrine.emoji}</div>
+                                            <div>
+                                                <h3 className="text-xl font-bold">{activeShrine.name}</h3>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Direction: {activeShrine.direction} • Element: {activeShrine.element}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-muted-foreground italic">No active objective set.</div>
+                                    )}
+                                </div>
+                                {isLeader && shrines && (
+                                    <div className="w-full md:w-64">
+                                        <Select onValueChange={(val) => objectiveMutation.mutate(val)}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Set New Objective" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {shrines.map(s => (
+                                                    <SelectItem key={s.id} value={s.id}>
+                                                        {s.emoji} {s.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
-                                    <div className="flex items-center text-xs text-muted-foreground mt-1">
-                                        <Badge variant={isOnline ? "secondary" : "outline"} className={`mr-2 ${isOnline ? 'text-green-600 bg-green-50' : ''}`}>
-                                            {isOnline ? "ONLINE" : "OFFLINE"}
-                                        </Badge>
-                                        {location && (
-                                            <span className="flex items-center">
-                                                <MapPin className="h-3 w-3 mr-1" />
-                                                Lat: {location.lat.toFixed(4)}, Lng: {location.lng.toFixed(4)}
-                                            </span>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                     {/* Beacon Controls */}
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Button
+                            size="lg"
+                            variant={personalStatus === "sos" ? "destructive" : "outline"}
+                            className="h-24 text-lg border-2 flex flex-col gap-2"
+                            onClick={() => broadcastBeacon("SOS")}
+                        >
+                            <AlertCircle className="h-8 w-8" />
+                            <span>SOS</span>
+                        </Button>
+                        <Button
+                            size="lg"
+                            variant={personalStatus === "regroup" ? "default" : "outline"}
+                            className="h-24 text-lg border-2 flex flex-col gap-2"
+                            onClick={() => broadcastBeacon("REGROUP")}
+                        >
+                            <Users className="h-8 w-8" />
+                            <span>REGROUP</span>
+                        </Button>
+                        <Button
+                            size="lg"
+                            variant="outline"
+                            className="h-24 text-lg border-2 flex flex-col gap-2"
+                            onClick={() => broadcastBeacon("MOVING")}
+                        >
+                            <Activity className="h-8 w-8" />
+                            <span>MOVING</span>
+                        </Button>
+                    </div>
+
+                    {/* Squad Telemetry */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Radio className={`h-5 w-5 ${Object.keys(memberLocations).length > 0 ? 'text-green-500 animate-pulse' : ''}`} />
+                                Live Telemetry
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                            {group.members?.map((member) => {
+                                const status = memberStatus[member.userId] || "ok";
+                                const location = memberLocations[member.userId];
+                                const isSelf = member.userId === user?.id;
+
+                                let statusColor = "bg-card";
+                                if (status === "sos") statusColor = "bg-red-500/10 border-red-500";
+                                if (status === "regroup") statusColor = "bg-blue-500/10 border-blue-500";
+
+                                return (
+                                <div key={member.id} className={`flex items-center justify-between p-4 rounded-lg border ${statusColor}`}>
+                                    <div className="flex items-center space-x-4">
+                                        <Avatar className="h-10 w-10 border-2 border-primary/20">
+                                            <AvatarFallback>{member.user.username.slice(0, 2).toUpperCase()}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <div className="font-semibold flex items-center gap-2">
+                                                {member.user.username}
+                                                {isSelf && <Badge variant="outline" className="text-xs">YOU</Badge>}
+                                            </div>
+                                            <div className="flex items-center text-xs text-muted-foreground mt-1">
+                                                {status !== "ok" && (
+                                                    <Badge variant={status === "sos" ? "destructive" : "secondary"} className="mr-2 uppercase">
+                                                        {status}
+                                                    </Badge>
+                                                )}
+                                                {location && (
+                                                    <span className="flex items-center">
+                                                        <MapPin className="h-3 w-3 mr-1" />
+                                                        Lat: {location.lat.toFixed(4)}, Lng: {location.lng.toFixed(4)}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {status === "ok" && (
+                                            <HeartPulse className="h-4 w-4 text-green-500/50" />
                                         )}
                                     </div>
                                 </div>
+                                );
+                            })}
                             </div>
+                        </CardContent>
+                    </Card>
+                </div>
 
-                            <div className="flex items-center gap-2">
-                                {beacon && (
-                                    <Badge variant={beacon === "SOS" ? "destructive" : "secondary"} className="animate-pulse">
-                                        {beacon}
-                                    </Badge>
-                                )}
-                                {!beacon && isOnline && (
-                                    <HeartPulse className="h-4 w-4 text-green-500/50" />
-                                )}
-                            </div>
-                        </div>
-                        );
-                    })}
-                    </div>
-                </CardContent>
-            </Card>
+                {/* Right Column: SitRep Log */}
+                <div className="lg:col-span-1 h-full">
+                    <Card className="h-[calc(100vh-12rem)] flex flex-col">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <MessageSquare className="h-5 w-5" />
+                                Mission Log
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex-1 flex flex-col min-h-0">
+                            <ScrollArea className="flex-1 pr-4 mb-4" ref={scrollRef}>
+                                <div className="space-y-4">
+                                    {sitreps?.length === 0 && (
+                                        <div className="text-center text-sm text-muted-foreground py-8">
+                                            No recent reports.
+                                        </div>
+                                    )}
+                                    {/* Reverse order for display if we want newest at bottom, but typically logs are newest at top or bottom?
+                                        Usually chat is bottom-up. Our query returns newest first. Let's reverse for display.
+                                    */}
+                                    {[...(sitreps || [])].reverse().map((sitrep) => (
+                                        <div key={sitrep.id} className="flex flex-col gap-1">
+                                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                                <span className="font-bold text-foreground">{sitrep.user.username}</span>
+                                                <span>{format(new Date(sitrep.createdAt), "HH:mm")}</span>
+                                            </div>
+                                            <div className={`p-2 rounded-md text-sm ${
+                                                sitrep.type === "WARNING" ? "bg-red-500/20 text-red-700 dark:text-red-300" :
+                                                sitrep.type === "SOS" ? "bg-red-600 text-white animate-pulse" :
+                                                "bg-muted"
+                                            }`}>
+                                                {sitrep.content}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </ScrollArea>
+
+                            <form onSubmit={sendSitRep} className="flex gap-2 mt-auto">
+                                <Input
+                                    placeholder="Enter SitRep..."
+                                    value={sitrepInput}
+                                    onChange={e => setSitrepInput(e.target.value)}
+                                />
+                                <Button type="submit" size="icon" disabled={!sitrepInput.trim() || sitrepMutation.isPending}>
+                                    <Send className="h-4 w-4" />
+                                </Button>
+                            </form>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
         </div>
       </main>
     </div>
