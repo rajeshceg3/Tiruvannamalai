@@ -12,6 +12,8 @@ import {
   journeys,
   groups,
   groupMembers,
+  type SitRep,
+  sitreps,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gt } from "drizzle-orm";
@@ -43,6 +45,12 @@ export interface IStorage {
   addGroupMember(groupId: number, userId: number): Promise<GroupMember>;
   getGroupMembers(groupId: number): Promise<(GroupMember & { user: User })[]>;
   getUserGroup(userId: number): Promise<Group | undefined>;
+  updateGroupObjective(groupId: number, shrineId: string | null): Promise<Group | undefined>;
+  updateGroupMemberStatus(groupId: number, userId: number, status?: string, location?: any): Promise<void>;
+
+  // SitReps
+  createSitRep(groupId: number, userId: number, content: string, type: string): Promise<SitRep>;
+  getSitReps(groupId: number): Promise<(SitRep & { user: User })[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -51,11 +59,13 @@ export class MemStorage implements IStorage {
   private journeys: Map<number, Journey>;
   private groups: Map<number, Group>;
   private groupMembers: Map<number, GroupMember>;
+  private sitreps: Map<number, SitRep>;
   private currentUserId: number;
   private currentVisitId: number;
   private currentJourneyId: number;
   private currentGroupId: number;
   private currentGroupMemberId: number;
+  private currentSitRepId: number;
 
   constructor() {
     this.users = new Map();
@@ -63,11 +73,13 @@ export class MemStorage implements IStorage {
     this.journeys = new Map();
     this.groups = new Map();
     this.groupMembers = new Map();
+    this.sitreps = new Map();
     this.currentUserId = 1;
     this.currentVisitId = 1;
     this.currentJourneyId = 1;
     this.currentGroupId = 1;
     this.currentGroupMemberId = 1;
+    this.currentSitRepId = 1;
   }
 
   // Static Shrine Data
@@ -183,6 +195,7 @@ export class MemStorage implements IStorage {
       code,
       creatorId,
       createdAt: new Date(),
+      activeObjective: null,
     };
     this.groups.set(id, group);
     await this.addGroupMember(id, creatorId); // Creator joins automatically
@@ -204,6 +217,8 @@ export class MemStorage implements IStorage {
       groupId,
       userId,
       joinedAt: new Date(),
+      lastStatus: "ok",
+      lastLocation: null,
     };
     this.groupMembers.set(id, member);
     return member;
@@ -229,6 +244,58 @@ export class MemStorage implements IStorage {
       .find((m) => m.userId === userId);
     if (!member) return undefined;
     return this.getGroup(member.groupId);
+  }
+
+  async updateGroupObjective(groupId: number, shrineId: string | null): Promise<Group | undefined> {
+    const group = this.groups.get(groupId);
+    if (!group) return undefined;
+    const updated = { ...group, activeObjective: shrineId };
+    this.groups.set(groupId, updated);
+    return updated;
+  }
+
+  async updateGroupMemberStatus(groupId: number, userId: number, status?: string, location?: any): Promise<void> {
+    const members = Array.from(this.groupMembers.values()).filter(m => m.groupId === groupId && m.userId === userId);
+    // There should be only one current membership usually, but filter just in case.
+    for (const member of members) {
+        let updated = { ...member };
+        if (status !== undefined) {
+            updated.lastStatus = status;
+        }
+        if (location !== undefined) {
+             updated.lastLocation = location;
+        }
+        this.groupMembers.set(member.id, updated);
+    }
+  }
+
+  async createSitRep(groupId: number, userId: number, content: string, type: string): Promise<SitRep> {
+    const id = this.currentSitRepId++;
+    const sitrep: SitRep = {
+        id,
+        groupId,
+        userId,
+        content,
+        type,
+        createdAt: new Date()
+    };
+    this.sitreps.set(id, sitrep);
+    return sitrep;
+  }
+
+  async getSitReps(groupId: number): Promise<(SitRep & { user: User })[]> {
+     const sitreps = Array.from(this.sitreps.values())
+        .filter(s => s.groupId === groupId)
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    const result: (SitRep & { user: User })[] = [];
+    for (const s of sitreps) {
+        const user = await this.getUser(s.userId);
+        if (user) {
+            result.push({ ...s, user });
+        }
+    }
+    return result;
   }
 }
 
@@ -331,6 +398,7 @@ export class DatabaseStorage implements IStorage {
       name,
       code,
       creatorId,
+      activeObjective: null,
     }).returning();
     await this.addGroupMember(group.id, creatorId);
     return group;
@@ -350,6 +418,8 @@ export class DatabaseStorage implements IStorage {
     const [member] = await db.insert(groupMembers).values({
       groupId,
       userId,
+      lastStatus: "ok",
+      lastLocation: null,
     }).returning();
     return member;
   }
@@ -377,6 +447,58 @@ export class DatabaseStorage implements IStorage {
 
     if (!member) return undefined;
     return this.getGroup(member.groupId);
+  }
+
+  async updateGroupObjective(groupId: number, shrineId: string | null): Promise<Group | undefined> {
+    const [group] = await db
+        .update(groups)
+        .set({ activeObjective: shrineId })
+        .where(eq(groups.id, groupId))
+        .returning();
+    return group;
+  }
+
+  async updateGroupMemberStatus(groupId: number, userId: number, status?: string, location?: any): Promise<void> {
+    const updateData: any = {};
+    if (status !== undefined) {
+        updateData.lastStatus = status;
+    }
+    if (location !== undefined) {
+        updateData.lastLocation = location;
+    }
+
+    if (Object.keys(updateData).length === 0) return;
+
+    await db.update(groupMembers)
+        .set(updateData)
+        .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)));
+  }
+
+  async createSitRep(groupId: number, userId: number, content: string, type: string): Promise<SitRep> {
+    const [sitrep] = await db.insert(sitreps).values({
+        groupId,
+        userId,
+        content,
+        type
+    }).returning();
+    return sitrep;
+  }
+
+  async getSitReps(groupId: number): Promise<(SitRep & { user: User })[]> {
+    const rows = await db
+        .select({
+            sitrep: sitreps,
+            user: users
+        })
+        .from(sitreps)
+        .innerJoin(users, eq(sitreps.userId, users.id))
+        .where(eq(sitreps.groupId, groupId))
+        .orderBy(desc(sitreps.createdAt));
+
+    return rows.map(row => ({
+        ...row.sitrep,
+        user: row.user
+    }));
   }
 }
 

@@ -52,6 +52,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/groups/join", requireAuth, validateRequest(joinGroupSchema), groupController.joinGroup);
   app.get("/api/groups/current", requireAuth, groupController.getCurrentGroup);
 
+  // Group Command Routes (New)
+  app.get("/api/groups/:groupId/sitreps", requireAuth, groupController.getSitReps);
+  app.post("/api/groups/:groupId/sitreps", requireAuth, validateRequest(z.object({ content: z.string(), type: z.string() })), groupController.createSitRep);
+  app.patch("/api/groups/:groupId/objective", requireAuth, validateRequest(z.object({ shrineId: z.string().nullable() })), groupController.updateGroupObjective);
+
   const httpServer = createServer(app);
 
   // --- WebSocket Setup ---

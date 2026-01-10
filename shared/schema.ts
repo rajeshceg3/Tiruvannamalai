@@ -174,6 +174,7 @@ export const groups = pgTable("groups", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   code: text("code").notNull().unique(), // Invite code
+  activeObjective: text("active_objective"), // The ID of the shrine that is the current tactical objective
   creatorId: integer("creator_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -183,6 +184,17 @@ export const groupMembers = pgTable("group_members", {
   groupId: integer("group_id").notNull().references(() => groups.id),
   userId: integer("user_id").notNull().references(() => users.id),
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  lastStatus: text("last_status").default("ok"), // ok, sos, regroup, etc.
+  lastLocation: jsonb("last_location"), // Persistent location snapshot
+});
+
+export const sitreps = pgTable("sitreps", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull().references(() => groups.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  content: text("content").notNull(),
+  type: text("type").notNull().default("INFO"), // INFO, WARNING, SOS, OBJECTIVE_SET
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // --- Zod Schemas for API Validation ---
@@ -215,10 +227,17 @@ export const insertVisitSchema = createInsertSchema(visits).pick({
   accuracy: z.number().min(0).optional(),
 });
 
+export const insertSitRepSchema = createInsertSchema(sitreps).pick({
+  content: true,
+  type: true,
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Visit = typeof visits.$inferSelect;
 export type Journey = typeof journeys.$inferSelect;
 export type Group = typeof groups.$inferSelect;
 export type GroupMember = typeof groupMembers.$inferSelect;
+export type SitRep = typeof sitreps.$inferSelect;
 export type JoinGroup = z.infer<typeof joinGroupSchema>;
+export type InsertSitRep = z.infer<typeof insertSitRepSchema>;
