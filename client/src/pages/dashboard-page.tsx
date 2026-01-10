@@ -278,7 +278,7 @@ export default function DashboardPage() {
           };
 
           queryClient.setQueryData<Visit[]>(["/api/visits"], (old) => {
-            return old ? [...old, optimisticVisit] : [optimisticVisit];
+            return old ? [optimisticVisit, ...old] : [optimisticVisit];
           });
 
           // Optimistic Update for Journey

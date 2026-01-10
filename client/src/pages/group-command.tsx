@@ -154,7 +154,7 @@ export default function GroupCommand() {
                             <div className="text-xs font-medium text-muted-foreground uppercase">Invite Code</div>
                             <div className="text-xl font-mono font-bold tracking-widest">{group.code}</div>
                             </div>
-                            <Button size="icon" variant="ghost" onClick={copyCode}>
+                            <Button size="icon" variant="ghost" onClick={copyCode} aria-label="Copy invite code">
                             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                             </Button>
                         </CardContent>
