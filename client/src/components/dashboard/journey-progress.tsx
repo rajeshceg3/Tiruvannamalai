@@ -2,6 +2,7 @@ import { Journey, Shrine } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
+// Refactored JourneyProgress component
 export function JourneyProgress({ journey, shrines }: { journey: Journey | null, shrines: Shrine[] }) {
   if (!journey) return null;
 

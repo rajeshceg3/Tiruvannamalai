@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 
+// Refactored ShrineList component for Dashboard modularity
 export function ShrineList({ shrines, visits, onCheckIn }: { shrines: Shrine[], visits: Visit[], onCheckIn: (id: string, location?: GeolocationCoordinates) => void }) {
   const visitedIds = new Set(visits.map(v => v.shrineId));
   const [verifyingId, setVerifyingId] = useState<string | null>(null);

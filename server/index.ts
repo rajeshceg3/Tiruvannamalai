@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { setupVite, serveStatic } from "./vite";
+import { log, requestLogger } from "./lib/logger";
 import helmet from "helmet";
 import { errorHandler } from "./middleware/error";
 
@@ -37,30 +38,7 @@ app.use((req, res, next) => {
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      if (app.get("env") === "production") {
-        // Structured logging for production
-        const logEntry = {
-          timestamp: new Date().toISOString(),
-          method: req.method,
-          path: path,
-          statusCode: res.statusCode,
-          durationMs: duration,
-          // Response body removed to prevent PII leakage
-        };
-        console.log(JSON.stringify(logEntry));
-      } else {
-        // Human-readable logging for development
-        let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-        if (capturedJsonResponse) {
-          logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-        }
-
-        if (logLine.length > 80) {
-          logLine = logLine.slice(0, 79) + "…";
-        }
-
-        log(logLine);
-      }
+      requestLogger(req, res, duration, capturedJsonResponse);
     }
   });
 

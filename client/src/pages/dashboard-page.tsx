@@ -11,6 +11,8 @@ import { VisitCard } from "@/components/dashboard/visit-card";
 import { ShrineList } from "@/components/dashboard/shrine-list";
 import { MobileSidebar } from "@/components/layout/mobile-sidebar";
 
+// Dashboard Page: Main entry point for user stats and shrine check-ins
+// Refactored to use modular components for better maintainability
 export default function DashboardPage() {
   const { user } = useAuth(); // Removed logoutMutation as it is now in Sidebar
   const { toast } = useToast();
