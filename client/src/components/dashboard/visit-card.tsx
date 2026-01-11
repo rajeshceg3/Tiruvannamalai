@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
 
+// Refactored VisitCard component for Dashboard
 export function VisitCard({ visit, shrine }: { visit: Visit, shrine: Shrine }) {
   const [notes, setNotes] = useState(visit.notes || "");
   const { toast } = useToast();

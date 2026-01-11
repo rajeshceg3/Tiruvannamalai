@@ -3,6 +3,7 @@ import { Sidebar } from "./sidebar";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 
+// Mobile Sidebar implementation using Sheet
 export function MobileSidebar() {
   return (
     <Sheet>
