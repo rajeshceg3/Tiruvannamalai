@@ -183,6 +183,18 @@ export const groupMembers = pgTable("group_members", {
   groupId: integer("group_id").notNull().references(() => groups.id),
   userId: integer("user_id").notNull().references(() => users.id),
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  lastLocation: jsonb("last_location"), // { lat, lng }
+  lastSeenAt: timestamp("last_seen_at"),
+  lastStatus: text("last_status"), // 'OK', 'SOS', 'MOVING', etc.
+});
+
+export const sitreps = pgTable("sitreps", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull().references(() => groups.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  message: text("message").notNull(),
+  type: text("type").notNull().default("info"), // info, alert, status
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // --- Zod Schemas for API Validation ---
@@ -221,4 +233,5 @@ export type Visit = typeof visits.$inferSelect;
 export type Journey = typeof journeys.$inferSelect;
 export type Group = typeof groups.$inferSelect;
 export type GroupMember = typeof groupMembers.$inferSelect;
+export type SitRep = typeof sitreps.$inferSelect;
 export type JoinGroup = z.infer<typeof joinGroupSchema>;

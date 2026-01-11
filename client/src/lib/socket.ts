@@ -58,6 +58,12 @@ export class SocketClient {
     }
   }
 
+  public sendSitrep(text: string) {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: "sitrep", text }));
+    }
+  }
+
   public on(type: string, callback: (data: any) => void) {
     if (!this.listeners.has(type)) {
       this.listeners.set(type, new Set());

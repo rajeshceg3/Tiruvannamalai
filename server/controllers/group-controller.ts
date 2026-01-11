@@ -11,6 +11,37 @@ export async function createGroup(req: Request, res: Response, next: NextFunctio
   }
 }
 
+export async function getGroupCommandCenter(req: Request, res: Response, next: NextFunction) {
+  try {
+    const groupId = parseInt(req.params.id);
+    if (isNaN(groupId)) {
+        return res.status(400).json({ message: "Invalid group ID" });
+    }
+
+    // Security check: User must be in the group
+    const userGroup = await storage.getUserGroup(req.user!.id);
+    if (!userGroup || userGroup.id !== groupId) {
+        return res.status(403).json({ message: "You are not a member of this group" });
+    }
+
+    const group = await storage.getGroup(groupId);
+    if (!group) {
+        return res.status(404).json({ message: "Group not found" });
+    }
+
+    const members = await storage.getGroupMembers(groupId);
+    const sitreps = await storage.getSitReps(groupId, 50);
+
+    res.json({
+        group,
+        members,
+        sitreps
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function joinGroup(req: Request, res: Response, next: NextFunction) {
   try {
     const { code } = req.body;

@@ -12,6 +12,8 @@ import {
   journeys,
   groups,
   groupMembers,
+  type SitRep,
+  sitreps,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gt } from "drizzle-orm";
@@ -43,6 +45,11 @@ export interface IStorage {
   addGroupMember(groupId: number, userId: number): Promise<GroupMember>;
   getGroupMembers(groupId: number): Promise<(GroupMember & { user: User })[]>;
   getUserGroup(userId: number): Promise<Group | undefined>;
+
+  // Command Center (Group Persistence)
+  updateGroupMemberStatus(userId: number, groupId: number, updates: Partial<GroupMember>): Promise<void>;
+  createSitRep(groupId: number, userId: number, message: string, type?: string): Promise<SitRep>;
+  getSitReps(groupId: number, limit?: number): Promise<SitRep[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -51,11 +58,13 @@ export class MemStorage implements IStorage {
   private journeys: Map<number, Journey>;
   private groups: Map<number, Group>;
   private groupMembers: Map<number, GroupMember>;
+  private sitreps: Map<number, SitRep>;
   private currentUserId: number;
   private currentVisitId: number;
   private currentJourneyId: number;
   private currentGroupId: number;
   private currentGroupMemberId: number;
+  private currentSitRepId: number;
 
   constructor() {
     this.users = new Map();
@@ -63,11 +72,13 @@ export class MemStorage implements IStorage {
     this.journeys = new Map();
     this.groups = new Map();
     this.groupMembers = new Map();
+    this.sitreps = new Map();
     this.currentUserId = 1;
     this.currentVisitId = 1;
     this.currentJourneyId = 1;
     this.currentGroupId = 1;
     this.currentGroupMemberId = 1;
+    this.currentSitRepId = 1;
   }
 
   // Static Shrine Data
@@ -204,6 +215,9 @@ export class MemStorage implements IStorage {
       groupId,
       userId,
       joinedAt: new Date(),
+      lastLocation: null,
+      lastSeenAt: null,
+      lastStatus: null
     };
     this.groupMembers.set(id, member);
     return member;
@@ -229,6 +243,37 @@ export class MemStorage implements IStorage {
       .find((m) => m.userId === userId);
     if (!member) return undefined;
     return this.getGroup(member.groupId);
+  }
+
+  async updateGroupMemberStatus(userId: number, groupId: number, updates: Partial<GroupMember>): Promise<void> {
+      // Find member entry specific to the group
+      const member = Array.from(this.groupMembers.values())
+          .find(m => m.userId === userId && m.groupId === groupId);
+      if (member) {
+          const updated = { ...member, ...updates };
+          this.groupMembers.set(member.id, updated);
+      }
+  }
+
+  async createSitRep(groupId: number, userId: number, message: string, type: string = "info"): Promise<SitRep> {
+      const id = this.currentSitRepId++;
+      const sitrep: SitRep = {
+          id,
+          groupId,
+          userId,
+          message,
+          type,
+          createdAt: new Date()
+      };
+      this.sitreps.set(id, sitrep);
+      return sitrep;
+  }
+
+  async getSitReps(groupId: number, limit: number = 50): Promise<SitRep[]> {
+      return Array.from(this.sitreps.values())
+          .filter(s => s.groupId === groupId)
+          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+          .slice(0, limit);
   }
 }
 
@@ -377,6 +422,38 @@ export class DatabaseStorage implements IStorage {
 
     if (!member) return undefined;
     return this.getGroup(member.groupId);
+  }
+
+  async updateGroupMemberStatus(userId: number, groupId: number, updates: Partial<GroupMember>): Promise<void> {
+    const [member] = await db
+      .select()
+      .from(groupMembers)
+      .where(and(eq(groupMembers.userId, userId), eq(groupMembers.groupId, groupId)))
+      .limit(1);
+
+    if (member) {
+        await db.update(groupMembers)
+            .set(updates)
+            .where(eq(groupMembers.id, member.id));
+    }
+  }
+
+  async createSitRep(groupId: number, userId: number, message: string, type: string = "info"): Promise<SitRep> {
+    const [sitrep] = await db.insert(sitreps).values({
+        groupId,
+        userId,
+        message,
+        type
+    }).returning();
+    return sitrep;
+  }
+
+  async getSitReps(groupId: number, limit: number = 50): Promise<SitRep[]> {
+      return db.select()
+          .from(sitreps)
+          .where(eq(sitreps.groupId, groupId))
+          .orderBy(desc(sitreps.createdAt))
+          .limit(limit);
   }
 }
 
