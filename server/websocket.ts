@@ -67,6 +67,12 @@ export function setupWebSocket(httpServer: Server) {
              ws.close();
           }
         } else if (message.type === "location_update" && currentGroupId) {
+          // Persist location
+          await storage.updateGroupMemberStatus(currentUserId, currentGroupId, {
+            lastLocation: message.location, // { lat, lng }
+            lastSeenAt: new Date()
+          });
+
           // Broadcast location to others in group
           broadcastToGroup(currentGroupId, {
             type: "location_update",
@@ -74,6 +80,15 @@ export function setupWebSocket(httpServer: Server) {
             location: message.location // { lat, lng, timestamp }
           }, ws); // Exclude sender
         } else if (message.type === "beacon_signal" && currentGroupId) {
+          // Persist beacon/status
+          await storage.updateGroupMemberStatus(currentUserId, currentGroupId, {
+             lastStatus: message.signal,
+             lastSeenAt: new Date()
+          });
+
+          // Create a SitRep for the record
+          await storage.createSitRep(currentGroupId, currentUserId, `BEACON: ${message.signal}`, message.signal === "SOS" ? "alert" : "info");
+
           // Broadcast emergency/status beacon
           broadcastToGroup(currentGroupId, {
             type: "beacon_signal",
@@ -87,6 +102,15 @@ export function setupWebSocket(httpServer: Server) {
              userId: currentUserId,
              status: message.status // e.g. "safe", "tired", "resting"
            });
+        } else if (message.type === "sitrep" && currentGroupId) {
+            // New: Handle textual SitReps
+            const sitrep = await storage.createSitRep(currentGroupId, currentUserId, message.text, "chat");
+
+            // Broadcast the full sitrep object
+            broadcastToGroup(currentGroupId, {
+                type: "sitrep",
+                sitrep
+            });
         }
       } catch (e) {
         console.error("WS Error:", e);

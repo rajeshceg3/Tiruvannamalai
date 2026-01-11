@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { socketClient } from "@/lib/socket";
@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Users, MapPin, Radio, Copy, Check, AlertCircle, HeartPulse, Activity } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Loader2, Users, MapPin, Radio, Copy, Check, AlertCircle, HeartPulse, Activity, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,6 +22,9 @@ type GroupMember = {
     username: string;
   };
   joinedAt: string;
+  lastLocation?: { lat: number; lng: number };
+  lastStatus?: string;
+  lastSeenAt?: string;
 };
 
 type Group = {
@@ -28,7 +32,20 @@ type Group = {
   name: string;
   code: string;
   creatorId: number;
+};
+
+type SitRep = {
+  id: number;
+  userId: number;
+  message: string;
+  type: string;
+  createdAt: string;
+};
+
+type CommandCenterData = {
+  group: Group;
   members: GroupMember[];
+  sitreps: SitRep[];
 };
 
 export default function GroupCommand() {
@@ -37,20 +54,49 @@ export default function GroupCommand() {
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
 
-  // Fetch current group
-  const { data: group, isLoading } = useQuery<Group | null>({
+  // 1. Fetch Basic Group Info first to get ID
+  const { data: currentGroup, isLoading: isGroupLoading } = useQuery<Group | null>({
     queryKey: ["/api/groups/current"],
+  });
+
+  // 2. Fetch Full Command Center Data
+  const { data: commandData, isLoading } = useQuery<CommandCenterData>({
+    queryKey: [`/api/groups/${currentGroup?.id}/command-center`],
+    enabled: !!currentGroup?.id,
   });
 
   // Real-time states
   const [memberLocations, setMemberLocations] = useState<Record<number, any>>({});
   const [memberStatus, setMemberStatus] = useState<Record<number, string>>({});
-  const [memberBeacons, setMemberBeacons] = useState<Record<number, string>>({}); // SOS, REGROUP, etc.
+  const [memberBeacons, setMemberBeacons] = useState<Record<number, string>>({});
+  const [liveSitreps, setLiveSitreps] = useState<SitRep[]>([]);
   const [personalStatus, setPersonalStatus] = useState<"ok" | "sos" | "regroup">("ok");
+  const [sitrepInput, setSitrepInput] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Initialize state from persistent data when loaded
+  useEffect(() => {
+    if (commandData) {
+      const locs: Record<number, any> = {};
+      const stats: Record<number, string> = {};
+      const beacons: Record<number, string> = {};
+
+      commandData.members.forEach(m => {
+        if (m.lastLocation) locs[m.userId] = m.lastLocation;
+        if (m.lastStatus) beacons[m.userId] = m.lastStatus;
+        // Assume offline initially unless we get a ping, or use lastSeenAt logic?
+        // For now, let's just leave online status to WS pings
+      });
+
+      setMemberLocations(prev => ({ ...locs, ...prev }));
+      setMemberBeacons(prev => ({ ...beacons, ...prev }));
+      setLiveSitreps(commandData.sitreps.reverse()); // Reverse to show oldest first in list, or handle sorting
+    }
+  }, [commandData]);
 
   useEffect(() => {
-    if (group && user) {
-      socketClient.joinGroup(user.id, group.id);
+    if (currentGroup && user) {
+      socketClient.joinGroup(user.id, currentGroup.id);
 
       const unsubLoc = socketClient.on("location_update", (data) => {
         setMemberLocations((prev) => ({ ...prev, [data.userId]: data.location }));
@@ -59,16 +105,15 @@ export default function GroupCommand() {
       const unsubMem = socketClient.on("member_update", (data) => {
         setMemberStatus((prev) => ({ ...prev, [data.userId]: data.status }));
         if (data.type === "member_update") {
-             queryClient.invalidateQueries({ queryKey: ["/api/groups/current"] });
+             queryClient.invalidateQueries({ queryKey: [`/api/groups/${currentGroup.id}/command-center`] });
         }
       });
 
       const unsubBeacon = socketClient.on("beacon_signal", (data) => {
         setMemberBeacons((prev) => ({ ...prev, [data.userId]: data.signal }));
 
-        // Alert logic if SOS
         if (data.signal === "SOS") {
-             const member = group.members.find(m => m.userId === data.userId);
+             const member = commandData?.members.find(m => m.userId === data.userId);
              toast({
                  title: "EMERGENCY BEACON",
                  description: `${member?.user.username || "A member"} has signaled SOS!`,
@@ -76,6 +121,16 @@ export default function GroupCommand() {
                  duration: 10000
              });
         }
+      });
+
+      const unsubSitrep = socketClient.on("sitrep", (data) => {
+          setLiveSitreps(prev => [...prev, data.sitrep]);
+          // Auto-scroll
+          if (scrollRef.current) {
+              setTimeout(() => {
+                  scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+              }, 100);
+          }
       });
 
       // Simulate sending our location occasionally
@@ -95,14 +150,15 @@ export default function GroupCommand() {
         unsubLoc();
         unsubMem();
         unsubBeacon();
+        unsubSitrep();
         clearInterval(interval);
       };
     }
-  }, [group, user, queryClient]);
+  }, [currentGroup, user, queryClient, commandData]);
 
   const copyCode = () => {
-    if (group?.code) {
-      navigator.clipboard.writeText(group.code);
+    if (commandData?.group?.code) {
+      navigator.clipboard.writeText(commandData.group.code);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       toast({ title: "Copied!", description: "Invite code copied to clipboard." });
@@ -110,9 +166,6 @@ export default function GroupCommand() {
   };
 
   const broadcastBeacon = (signal: "SOS" | "REGROUP" | "MOVING") => {
-      // Send via socket
-      // We need to implement this method in socketClient first, or use raw send if possible.
-      // But assuming we can:
       socketClient.sendBeacon(signal);
       setPersonalStatus(signal === "SOS" ? "sos" : signal === "REGROUP" ? "regroup" : "ok");
 
@@ -123,7 +176,15 @@ export default function GroupCommand() {
       });
   };
 
-  if (isLoading) {
+  const sendSitrep = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!sitrepInput.trim()) return;
+
+      socketClient.sendSitrep(sitrepInput);
+      setSitrepInput("");
+  };
+
+  if (isGroupLoading || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -131,9 +192,13 @@ export default function GroupCommand() {
     );
   }
 
-  if (!group) {
+  if (!currentGroup && !isGroupLoading) {
     return <NoGroupState />;
   }
+
+  if (!commandData) return null;
+
+  const { group, members } = commandData;
 
   return (
     <div className="flex h-screen bg-background">
@@ -144,6 +209,7 @@ export default function GroupCommand() {
            <MobileSidebar />
         </header>
         <div className="max-w-6xl mx-auto space-y-8">
+            {/* Header Area */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                 <h1 className="text-3xl font-bold tracking-tight">Squadron Overwatch</h1>
@@ -167,97 +233,153 @@ export default function GroupCommand() {
                 </div>
             </div>
 
-            {/* Beacon Controls */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Button
-                    size="lg"
-                    variant={personalStatus === "sos" ? "destructive" : "outline"}
-                    className="h-24 text-lg border-2"
-                    onClick={() => broadcastBeacon("SOS")}
-                >
-                    <AlertCircle className="mr-2 h-6 w-6" />
-                    SOS / EMERGENCY
-                </Button>
-                <Button
-                    size="lg"
-                    variant={personalStatus === "regroup" ? "default" : "outline"}
-                    className="h-24 text-lg border-2"
-                    onClick={() => broadcastBeacon("REGROUP")}
-                >
-                    <Users className="mr-2 h-6 w-6" />
-                    REQUEST REGROUP
-                </Button>
-                <Button
-                    size="lg"
-                    variant="outline"
-                    className="h-24 text-lg border-2"
-                    onClick={() => broadcastBeacon("MOVING")}
-                >
-                    <Activity className="mr-2 h-6 w-6" />
-                    MOVING / ACTIVE
-                </Button>
-            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column: Controls & SitReps */}
+                <div className="lg:col-span-2 space-y-6">
+                     {/* Beacon Controls */}
+                    <div className="grid grid-cols-3 gap-2">
+                        <Button
+                            size="lg"
+                            variant={personalStatus === "sos" ? "destructive" : "outline"}
+                            className="h-20 text-sm md:text-lg border-2 flex flex-col gap-1"
+                            onClick={() => broadcastBeacon("SOS")}
+                        >
+                            <AlertCircle className="h-6 w-6" />
+                            SOS
+                        </Button>
+                        <Button
+                            size="lg"
+                            variant={personalStatus === "regroup" ? "default" : "outline"}
+                            className="h-20 text-sm md:text-lg border-2 flex flex-col gap-1"
+                            onClick={() => broadcastBeacon("REGROUP")}
+                        >
+                            <Users className="h-6 w-6" />
+                            REGROUP
+                        </Button>
+                        <Button
+                            size="lg"
+                            variant="outline"
+                            className="h-20 text-sm md:text-lg border-2 flex flex-col gap-1"
+                            onClick={() => broadcastBeacon("MOVING")}
+                        >
+                            <Activity className="h-6 w-6" />
+                            MOVING
+                        </Button>
+                    </div>
 
-            {/* Squad List */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                    <Radio className={`h-5 w-5 ${Object.keys(memberLocations).length > 0 ? 'text-green-500 animate-pulse' : ''}`} />
-                    Live Telemetry
-                    </CardTitle>
-                    <CardDescription>
-                        Real-time status of all {group.members.length} operators.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                    {group.members?.map((member) => {
-                        const isOnline = memberStatus[member.userId] === "online" || member.userId === user?.id;
-                        const location = memberLocations[member.userId];
-                        const beacon = memberBeacons[member.userId];
-                        const isSelf = member.userId === user?.id;
+                    {/* SitRep Feed */}
+                    <Card className="h-[500px] flex flex-col">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">Tactical Feed</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex-1 min-h-0 flex flex-col">
+                            <ScrollArea className="flex-1 pr-4">
+                                <div className="space-y-4">
+                                    {liveSitreps.map((sitrep, i) => {
+                                        const sender = members.find(m => m.userId === sitrep.userId);
+                                        const isMe = sitrep.userId === user?.id;
+                                        return (
+                                            <div key={i} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-xs font-bold text-muted-foreground">
+                                                        {sender?.user.username || "Unknown"}
+                                                    </span>
+                                                    <span className="text-[10px] text-muted-foreground/50">
+                                                        {new Date(sitrep.createdAt).toLocaleTimeString()}
+                                                    </span>
+                                                </div>
+                                                <div className={`rounded-lg px-3 py-2 max-w-[80%] text-sm ${
+                                                    isMe
+                                                    ? 'bg-primary text-primary-foreground'
+                                                    : sitrep.type === 'alert'
+                                                        ? 'bg-destructive/10 border border-destructive text-destructive'
+                                                        : 'bg-muted'
+                                                }`}>
+                                                    {sitrep.message}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    <div ref={scrollRef} />
+                                </div>
+                            </ScrollArea>
 
-                        return (
-                        <div key={member.id} className={`flex items-center justify-between p-4 rounded-lg border ${beacon === "SOS" ? 'bg-red-500/10 border-red-500' : 'bg-card'}`}>
-                            <div className="flex items-center space-x-4">
-                                <Avatar className="h-10 w-10 border-2 border-primary/20">
-                                    <AvatarFallback>{member.user.username.slice(0, 2).toUpperCase()}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <div className="font-semibold flex items-center gap-2">
-                                        {member.user.username}
-                                        {isSelf && <Badge variant="outline" className="text-xs">YOU</Badge>}
+                            <form onSubmit={sendSitrep} className="mt-4 flex gap-2">
+                                <Input
+                                    value={sitrepInput}
+                                    onChange={(e) => setSitrepInput(e.target.value)}
+                                    placeholder="Enter SitRep..."
+                                    className="flex-1"
+                                />
+                                <Button type="submit" size="icon">
+                                    <Send className="h-4 w-4" />
+                                </Button>
+                            </form>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Right Column: Squad List */}
+                <div className="lg:col-span-1">
+                    <Card className="h-full">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                            <Radio className={`h-5 w-5 ${Object.keys(memberLocations).length > 0 ? 'text-green-500 animate-pulse' : ''}`} />
+                            Live Telemetry
+                            </CardTitle>
+                            <CardDescription>
+                                {members.length} operators active.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                            {members.map((member) => {
+                                const isOnline = memberStatus[member.userId] === "online" || member.userId === user?.id;
+                                const location = memberLocations[member.userId];
+                                const beacon = memberBeacons[member.userId];
+                                const isSelf = member.userId === user?.id;
+
+                                return (
+                                <div key={member.id} className={`flex items-center justify-between p-3 rounded-lg border ${beacon === "SOS" ? 'bg-red-500/10 border-red-500' : 'bg-card'}`}>
+                                    <div className="flex items-center space-x-3">
+                                        <Avatar className="h-8 w-8 border border-primary/20">
+                                            <AvatarFallback>{member.user.username.slice(0, 2).toUpperCase()}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="overflow-hidden">
+                                            <div className="font-medium text-sm flex items-center gap-1">
+                                                {member.user.username}
+                                                {isSelf && <span className="text-[10px] bg-primary/10 text-primary px-1 rounded">ME</span>}
+                                            </div>
+                                            <div className="flex items-center text-[10px] text-muted-foreground mt-0.5">
+                                                {location ? (
+                                                    <span className="flex items-center text-xs">
+                                                        <MapPin className="h-3 w-3 mr-0.5" />
+                                                        {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+                                                    </span>
+                                                ) : (
+                                                    <span>No Signal</span>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center text-xs text-muted-foreground mt-1">
-                                        <Badge variant={isOnline ? "secondary" : "outline"} className={`mr-2 ${isOnline ? 'text-green-600 bg-green-50' : ''}`}>
-                                            {isOnline ? "ONLINE" : "OFFLINE"}
-                                        </Badge>
-                                        {location && (
-                                            <span className="flex items-center">
-                                                <MapPin className="h-3 w-3 mr-1" />
-                                                Lat: {location.lat.toFixed(4)}, Lng: {location.lng.toFixed(4)}
-                                            </span>
+
+                                    <div className="flex items-center">
+                                        {beacon ? (
+                                            <Badge variant={beacon === "SOS" ? "destructive" : "secondary"} className="text-[10px] px-1 animate-pulse">
+                                                {beacon}
+                                            </Badge>
+                                        ) : (
+                                            <div className={`h-2 w-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-300'}`} />
                                         )}
                                     </div>
                                 </div>
+                                );
+                            })}
                             </div>
-
-                            <div className="flex items-center gap-2">
-                                {beacon && (
-                                    <Badge variant={beacon === "SOS" ? "destructive" : "secondary"} className="animate-pulse">
-                                        {beacon}
-                                    </Badge>
-                                )}
-                                {!beacon && isOnline && (
-                                    <HeartPulse className="h-4 w-4 text-green-500/50" />
-                                )}
-                            </div>
-                        </div>
-                        );
-                    })}
-                    </div>
-                </CardContent>
-            </Card>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
         </div>
       </main>
     </div>

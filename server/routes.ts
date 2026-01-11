@@ -52,6 +52,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/groups/join", requireAuth, validateRequest(joinGroupSchema), groupController.joinGroup);
   app.get("/api/groups/current", requireAuth, groupController.getCurrentGroup);
 
+  // Command Center Routes
+  app.get("/api/groups/:id/command-center", requireAuth, groupController.getGroupCommandCenter);
+
   const httpServer = createServer(app);
 
   // --- WebSocket Setup ---
