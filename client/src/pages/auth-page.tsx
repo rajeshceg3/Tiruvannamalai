@@ -127,7 +127,7 @@ export default function AuthPage() {
         </Card>
       </div>
 
-      <div className="hidden lg:flex flex-col justify-center p-12 bg-primary/5 text-primary-foreground relative overflow-hidden">
+      <div className="hidden lg:flex flex-col justify-center p-12 bg-primary/10 text-primary-foreground relative overflow-hidden">
         <div className="absolute inset-0 bg-black/40 z-10" />
         <img
           src="https://images.unsplash.com/photo-1582510003544-4d00b7f74220?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80"
