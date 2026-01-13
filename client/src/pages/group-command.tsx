@@ -14,6 +14,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileSidebar } from "@/components/layout/mobile-sidebar";
+import { GroupMap } from "@/components/groups/group-map";
 
 type GroupMember = {
   id: number;
@@ -200,6 +201,15 @@ export default function GroupCommand() {
 
   const { group, members } = commandData;
 
+  // Transform members for the map
+  const mapMembers = members.map(m => ({
+      userId: m.userId,
+      username: m.user.username,
+      location: memberLocations[m.userId] || m.lastLocation,
+      status: memberBeacons[m.userId] || m.lastStatus || 'OK',
+      isSelf: m.userId === user?.id
+  }));
+
   return (
     <div className="flex h-screen bg-background">
       <Sidebar className="hidden md:flex" />
@@ -233,46 +243,90 @@ export default function GroupCommand() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left Column: Controls & SitReps */}
-                <div className="lg:col-span-2 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[800px] lg:h-[600px]">
+                {/* Left Column: Map & Controls */}
+                <div className="lg:col-span-2 flex flex-col gap-4 h-full">
                      {/* Beacon Controls */}
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-2 flex-none">
                         <Button
                             size="lg"
                             variant={personalStatus === "sos" ? "destructive" : "outline"}
-                            className="h-20 text-sm md:text-lg border-2 flex flex-col gap-1"
+                            className="h-16 text-sm md:text-lg border-2 flex flex-col gap-1"
                             onClick={() => broadcastBeacon("SOS")}
                         >
-                            <AlertCircle className="h-6 w-6" />
+                            <AlertCircle className="h-5 w-5" />
                             SOS
                         </Button>
                         <Button
                             size="lg"
                             variant={personalStatus === "regroup" ? "default" : "outline"}
-                            className="h-20 text-sm md:text-lg border-2 flex flex-col gap-1"
+                            className="h-16 text-sm md:text-lg border-2 flex flex-col gap-1"
                             onClick={() => broadcastBeacon("REGROUP")}
                         >
-                            <Users className="h-6 w-6" />
+                            <Users className="h-5 w-5" />
                             REGROUP
                         </Button>
                         <Button
                             size="lg"
                             variant="outline"
-                            className="h-20 text-sm md:text-lg border-2 flex flex-col gap-1"
+                            className="h-16 text-sm md:text-lg border-2 flex flex-col gap-1"
                             onClick={() => broadcastBeacon("MOVING")}
                         >
-                            <Activity className="h-6 w-6" />
+                            <Activity className="h-5 w-5" />
                             MOVING
                         </Button>
                     </div>
 
+                    {/* LIVE MAP */}
+                    <Card className="flex-1 min-h-0 border-2">
+                        <CardContent className="p-0 h-full relative">
+                             <div className="absolute top-2 right-2 z-10 bg-background/80 backdrop-blur px-2 py-1 rounded text-xs font-mono border">
+                                {Object.keys(memberLocations).length} SIGNAL(S) ACTIVE
+                             </div>
+                             <GroupMap members={mapMembers} />
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Right Column: SitRep Feed & Squad List */}
+                <div className="lg:col-span-1 flex flex-col gap-4 h-full">
+                    {/* Squad Status */}
+                    <Card className="flex-none">
+                         <CardHeader className="py-3 px-4">
+                            <CardTitle className="flex items-center gap-2 text-sm">
+                            <Radio className={`h-4 w-4 ${Object.keys(memberLocations).length > 0 ? 'text-green-500 animate-pulse' : ''}`} />
+                            Squad Status
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="py-2 px-4 max-h-[200px] overflow-y-auto">
+                             <div className="space-y-2">
+                            {members.map((member) => {
+                                const isOnline = memberStatus[member.userId] === "online" || member.userId === user?.id;
+                                const beacon = memberBeacons[member.userId];
+                                return (
+                                <div key={member.id} className="flex items-center justify-between text-sm">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`h-2 w-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                        <span>{member.user.username}</span>
+                                    </div>
+                                    {beacon && (
+                                        <Badge variant={beacon === "SOS" ? "destructive" : "outline"} className="text-[10px] h-5">
+                                            {beacon}
+                                        </Badge>
+                                    )}
+                                </div>
+                                );
+                            })}
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     {/* SitRep Feed */}
-                    <Card className="h-[500px] flex flex-col">
-                        <CardHeader className="pb-2">
+                    <Card className="flex-1 flex flex-col min-h-0">
+                        <CardHeader className="py-3 px-4">
                             <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">Tactical Feed</CardTitle>
                         </CardHeader>
-                        <CardContent className="flex-1 min-h-0 flex flex-col">
+                        <CardContent className="flex-1 min-h-0 flex flex-col p-3">
                             <ScrollArea className="flex-1 pr-4">
                                 <div className="space-y-4">
                                     {liveSitreps.map((sitrep, i) => {
@@ -281,14 +335,14 @@ export default function GroupCommand() {
                                         return (
                                             <div key={i} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <span className="text-xs font-bold text-muted-foreground">
+                                                    <span className="text-[10px] font-bold text-muted-foreground">
                                                         {sender?.user.username || "Unknown"}
                                                     </span>
-                                                    <span className="text-[10px] text-muted-foreground/50">
-                                                        {new Date(sitrep.createdAt).toLocaleTimeString()}
+                                                    <span className="text-[9px] text-muted-foreground/50">
+                                                        {new Date(sitrep.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                                                     </span>
                                                 </div>
-                                                <div className={`rounded-lg px-3 py-2 max-w-[80%] text-sm ${
+                                                <div className={`rounded-lg px-3 py-2 max-w-[90%] text-xs ${
                                                     isMe
                                                     ? 'bg-primary text-primary-foreground'
                                                     : sitrep.type === 'alert'
@@ -304,78 +358,17 @@ export default function GroupCommand() {
                                 </div>
                             </ScrollArea>
 
-                            <form onSubmit={sendSitrep} className="mt-4 flex gap-2">
+                            <form onSubmit={sendSitrep} className="mt-3 flex gap-2">
                                 <Input
                                     value={sitrepInput}
                                     onChange={(e) => setSitrepInput(e.target.value)}
-                                    placeholder="Enter SitRep..."
-                                    className="flex-1"
+                                    placeholder="Message..."
+                                    className="flex-1 h-8 text-xs"
                                 />
-                                <Button type="submit" size="icon">
-                                    <Send className="h-4 w-4" />
+                                <Button type="submit" size="icon" className="h-8 w-8">
+                                    <Send className="h-3 w-3" />
                                 </Button>
                             </form>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Right Column: Squad List */}
-                <div className="lg:col-span-1">
-                    <Card className="h-full">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                            <Radio className={`h-5 w-5 ${Object.keys(memberLocations).length > 0 ? 'text-green-500 animate-pulse' : ''}`} />
-                            Live Telemetry
-                            </CardTitle>
-                            <CardDescription>
-                                {members.length} operators active.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                            {members.map((member) => {
-                                const isOnline = memberStatus[member.userId] === "online" || member.userId === user?.id;
-                                const location = memberLocations[member.userId];
-                                const beacon = memberBeacons[member.userId];
-                                const isSelf = member.userId === user?.id;
-
-                                return (
-                                <div key={member.id} className={`flex items-center justify-between p-3 rounded-lg border ${beacon === "SOS" ? 'bg-red-500/10 border-red-500' : 'bg-card'}`}>
-                                    <div className="flex items-center space-x-3">
-                                        <Avatar className="h-8 w-8 border border-primary/20">
-                                            <AvatarFallback>{member.user.username.slice(0, 2).toUpperCase()}</AvatarFallback>
-                                        </Avatar>
-                                        <div className="overflow-hidden">
-                                            <div className="font-medium text-sm flex items-center gap-1">
-                                                {member.user.username}
-                                                {isSelf && <span className="text-[10px] bg-primary/10 text-primary px-1 rounded">ME</span>}
-                                            </div>
-                                            <div className="flex items-center text-[10px] text-muted-foreground mt-0.5">
-                                                {location ? (
-                                                    <span className="flex items-center text-xs">
-                                                        <MapPin className="h-3 w-3 mr-0.5" />
-                                                        {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
-                                                    </span>
-                                                ) : (
-                                                    <span>No Signal</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center">
-                                        {beacon ? (
-                                            <Badge variant={beacon === "SOS" ? "destructive" : "secondary"} className="text-[10px] px-1 animate-pulse">
-                                                {beacon}
-                                            </Badge>
-                                        ) : (
-                                            <div className={`h-2 w-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-300'}`} />
-                                        )}
-                                    </div>
-                                </div>
-                                );
-                            })}
-                            </div>
                         </CardContent>
                     </Card>
                 </div>
