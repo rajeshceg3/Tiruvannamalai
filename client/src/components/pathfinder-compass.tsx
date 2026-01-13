@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Navigation, MapPin, CheckCircle2 } from "lucide-react";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { motion } from "framer-motion";
+import { calculateDistance } from "@shared/geo";
+import { LOCATION_VERIFICATION_THRESHOLD } from "@shared/schema";
 
 interface PathfinderCompassProps {
   targetShrine: Shrine;
@@ -26,21 +28,6 @@ function calculateBearing(startLat: number, startLng: number, destLat: number, d
 
   const brng = (Math.atan2(y, x) * 180) / Math.PI;
   return (brng + 360) % 360;
-}
-
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371e3; // metres
-  const phi1 = (lat1 * Math.PI) / 180;
-  const phi2 = (lat2 * Math.PI) / 180;
-  const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
-  const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
-
-  const a =
-    Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
-    Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return R * c;
 }
 
 export function PathfinderCompass({ targetShrine, onCheckIn, isCheckingIn, hasVisited }: PathfinderCompassProps) {
@@ -73,7 +60,7 @@ export function PathfinderCompass({ targetShrine, onCheckIn, isCheckingIn, hasVi
 
   const distance = calculateDistance(latitude, longitude, targetShrine.latitude, targetShrine.longitude);
   const bearing = calculateBearing(latitude, longitude, targetShrine.latitude, targetShrine.longitude);
-  const isWithinRange = distance <= 200; // 200m range
+  const isWithinRange = distance <= LOCATION_VERIFICATION_THRESHOLD;
 
   // Note: We don't have device orientation in this simple hook,
   // so the arrow points to the bearing relative to North.
