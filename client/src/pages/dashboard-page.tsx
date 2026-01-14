@@ -16,6 +16,7 @@ import { MobileSidebar } from "@/components/layout/mobile-sidebar";
 export default function DashboardPage() {
   const { user } = useAuth(); // Removed logoutMutation as it is now in Sidebar
   const { toast } = useToast();
+  const [visitLimit, setVisitLimit] = useState(50);
 
   const { data: shrines } = useQuery<Shrine[]>({
     queryKey: ["/api/shrines"]
@@ -172,15 +173,19 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <>
-                    {visits.slice(0, 50).map(visit => {
+                    {visits.slice(0, visitLimit).map(visit => {
                       const shrine = shrines.find(s => s.id === visit.shrineId);
                       if (!shrine) return null;
                       return <VisitCard key={visit.id} visit={visit} shrine={shrine} />;
                     })}
-                    {visits.length > 50 && (
-                       <div className="text-center py-4 text-sm text-muted-foreground">
-                          And {visits.length - 50} more entries...
-                       </div>
+                    {visits.length > visitLimit && (
+                      <Button
+                        variant="outline"
+                        className="w-full mt-4"
+                        onClick={() => setVisitLimit(prev => prev + 50)}
+                      >
+                        Load More Entries ({visits.length - visitLimit} remaining)
+                      </Button>
                     )}
                   </>
                 )}

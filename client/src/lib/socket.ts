@@ -17,7 +17,6 @@ export class SocketClient {
     this.ws = new WebSocket(url);
 
     this.ws.onopen = () => {
-      console.log("WS Connected");
       if (this.userId && this.groupId) {
         this.joinGroup(this.userId, this.groupId);
       }
@@ -28,12 +27,11 @@ export class SocketClient {
         const data = JSON.parse(event.data);
         this.emit(data.type, data);
       } catch (e) {
-        console.error("WS Parse Error", e);
+        // Silently ignore parse errors in production
       }
     };
 
     this.ws.onclose = () => {
-      console.log("WS Disconnected");
       this.reconnectTimeout = setTimeout(() => this.connect(), 3000);
     };
   }
