@@ -2,6 +2,8 @@ import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { Server } from "http";
 import { sessionParser } from "./auth";
+import { calculateDistance } from "@shared/geo";
+import { Waypoint } from "@shared/schema";
 
 interface WebSocketWithUser extends WebSocket {
   userId: number;
@@ -31,6 +33,20 @@ export function setupWebSocket(httpServer: Server) {
 
   // Map to store clients: groupId -> Set<WebSocket>
   const groupClients = new Map<number, Set<WebSocket>>();
+
+  // Cache for geofencing optimization
+  const waypointCache = new Map<number, { waypoints: Waypoint[], lastFetched: number }>();
+  const CACHE_TTL = 10000; // 10 seconds
+
+  async function getGroupWaypoints(groupId: number) {
+      const cached = waypointCache.get(groupId);
+      if (cached && Date.now() - cached.lastFetched < CACHE_TTL) {
+          return cached.waypoints;
+      }
+      const waypoints = await storage.getWaypoints(groupId);
+      waypointCache.set(groupId, { waypoints, lastFetched: Date.now() });
+      return waypoints;
+  }
 
   wss.on("connection", (ws, req) => {
     let currentGroupId: number | null = null;
@@ -79,6 +95,48 @@ export function setupWebSocket(httpServer: Server) {
             userId: currentUserId, // Use authenticated ID
             location: message.location // { lat, lng, timestamp }
           }, ws); // Exclude sender
+
+          // GEOFENCING CHECK
+          const waypoints = await getGroupWaypoints(currentGroupId);
+          if (waypoints.length > 0) {
+            const members = await storage.getGroupMembers(currentGroupId);
+            const member = members.find(m => m.userId === currentUserId);
+
+            if (member) {
+              let insideAnyWaypoint = false;
+              for (const waypoint of waypoints) {
+                const dist = calculateDistance(
+                  message.location.lat,
+                  message.location.lng,
+                  waypoint.latitude,
+                  waypoint.longitude
+                );
+
+                if (dist <= waypoint.radius) {
+                  insideAnyWaypoint = true;
+                  // Only trigger if we weren't already here
+                  if (member.lastWaypointId !== waypoint.id) {
+                    await storage.updateGroupMemberStatus(currentUserId, currentGroupId, { lastWaypointId: waypoint.id });
+
+                    const sitrep = await storage.createSitRep(
+                      currentGroupId,
+                      currentUserId,
+                      `ARRIVED at ${waypoint.name}`,
+                      "status"
+                    );
+
+                    broadcastToGroup(currentGroupId, { type: "sitrep", sitrep });
+                  }
+                  break; // Assume strictly one waypoint at a time for now
+                }
+              }
+
+              // If not inside any waypoint but was previously recorded as being in one, clear it
+              if (!insideAnyWaypoint && member.lastWaypointId !== null) {
+                 await storage.updateGroupMemberStatus(currentUserId, currentGroupId, { lastWaypointId: null });
+              }
+            }
+          }
         } else if (message.type === "beacon_signal" && currentGroupId) {
           // Persist beacon/status
           await storage.updateGroupMemberStatus(currentUserId, currentGroupId, {

@@ -8,13 +8,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Users, MapPin, Radio, Copy, Check, AlertCircle, HeartPulse, Activity, Send } from "lucide-react";
+import { Loader2, Users, MapPin, Radio, Copy, Check, AlertCircle, HeartPulse, Activity, Send, Flag, Target, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileSidebar } from "@/components/layout/mobile-sidebar";
-import { GroupMap } from "@/components/groups/group-map";
+import { GroupMap, MapWaypoint } from "@/components/groups/group-map";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type GroupMember = {
   id: number;
@@ -26,6 +29,7 @@ type GroupMember = {
   lastLocation?: { lat: number; lng: number };
   lastStatus?: string;
   lastSeenAt?: string;
+  lastWaypointId?: number;
 };
 
 type Group = {
@@ -47,6 +51,7 @@ type CommandCenterData = {
   group: Group;
   members: GroupMember[];
   sitreps: SitRep[];
+  waypoints: MapWaypoint[];
 };
 
 export default function GroupCommand() {
@@ -74,6 +79,11 @@ export default function GroupCommand() {
   const [personalStatus, setPersonalStatus] = useState<"ok" | "sos" | "regroup">("ok");
   const [sitrepInput, setSitrepInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Waypoint State
+  const [waypointMode, setWaypointMode] = useState<string | null>(null); // 'RALLY', 'HAZARD', 'OBJECTIVE'
+  const [pendingWaypoint, setPendingWaypoint] = useState<{lat: number, lng: number} | null>(null);
+  const [newWaypointName, setNewWaypointName] = useState("");
 
   // Initialize state from persistent data when loaded
   useEffect(() => {
@@ -185,6 +195,40 @@ export default function GroupCommand() {
       setSitrepInput("");
   };
 
+  const createWaypointMutation = useMutation({
+      mutationFn: async (data: any) => {
+          const res = await apiRequest("POST", `/api/groups/${currentGroup!.id}/waypoints`, data);
+          return res.json();
+      },
+      onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: [`/api/groups/${currentGroup!.id}/command-center`] });
+          setPendingWaypoint(null);
+          setWaypointMode(null);
+          setNewWaypointName("");
+          toast({ title: "Waypoint Established", description: "Tactical marker added to map." });
+      },
+      onError: (e) => {
+          toast({ title: "Error", description: "Failed to create waypoint", variant: "destructive" });
+      }
+  });
+
+  const handleMapClick = (lat: number, lng: number) => {
+      if (waypointMode) {
+          setPendingWaypoint({ lat, lng });
+      }
+  };
+
+  const confirmWaypoint = () => {
+      if (!pendingWaypoint || !waypointMode || !newWaypointName) return;
+      createWaypointMutation.mutate({
+          name: newWaypointName,
+          latitude: pendingWaypoint.lat,
+          longitude: pendingWaypoint.lng,
+          type: waypointMode,
+          radius: 50 // Default
+      });
+  };
+
   if (isGroupLoading || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -199,7 +243,7 @@ export default function GroupCommand() {
 
   if (!commandData) return null;
 
-  const { group, members } = commandData;
+  const { group, members, waypoints } = commandData;
 
   // Transform members for the map
   const mapMembers = members.map(m => ({
@@ -209,6 +253,8 @@ export default function GroupCommand() {
       status: memberBeacons[m.userId] || m.lastStatus || 'OK',
       isSelf: m.userId === user?.id
   }));
+
+  const isCreator = group.creatorId === user?.id;
 
   return (
     <div className="flex h-screen bg-background">
@@ -277,13 +323,50 @@ export default function GroupCommand() {
                         </Button>
                     </div>
 
+                    {isCreator && (
+                        <div className="flex gap-2 items-center overflow-x-auto pb-2">
+                             <span className="text-xs font-bold text-muted-foreground uppercase whitespace-nowrap">Tactical:</span>
+                             <Button
+                                variant={waypointMode === "RALLY" ? "default" : "secondary"}
+                                size="sm"
+                                className="h-8"
+                                onClick={() => setWaypointMode(waypointMode === "RALLY" ? null : "RALLY")}
+                             >
+                                <Flag className="w-3 h-3 mr-1" /> Rally
+                             </Button>
+                             <Button
+                                variant={waypointMode === "OBJECTIVE" ? "default" : "secondary"}
+                                size="sm"
+                                className="h-8"
+                                onClick={() => setWaypointMode(waypointMode === "OBJECTIVE" ? null : "OBJECTIVE")}
+                             >
+                                <Target className="w-3 h-3 mr-1" /> Objective
+                             </Button>
+                             <Button
+                                variant={waypointMode === "HAZARD" ? "default" : "secondary"}
+                                size="sm"
+                                className="h-8"
+                                onClick={() => setWaypointMode(waypointMode === "HAZARD" ? null : "HAZARD")}
+                             >
+                                <AlertTriangle className="w-3 h-3 mr-1" /> Hazard
+                             </Button>
+                             {waypointMode && (
+                                 <span className="text-xs text-primary animate-pulse ml-2">Click Map to Place</span>
+                             )}
+                        </div>
+                    )}
+
                     {/* LIVE MAP */}
-                    <Card className="flex-1 min-h-0 border-2">
+                    <Card className="flex-1 min-h-0 border-2 relative">
                         <CardContent className="p-0 h-full relative">
                              <div className="absolute top-2 right-2 z-10 bg-background/80 backdrop-blur px-2 py-1 rounded text-xs font-mono border">
                                 {Object.keys(memberLocations).length} SIGNAL(S) ACTIVE
                              </div>
-                             <GroupMap members={mapMembers} />
+                             <GroupMap
+                                members={mapMembers}
+                                waypoints={waypoints}
+                                onMapClick={handleMapClick}
+                             />
                         </CardContent>
                     </Card>
                 </div>
@@ -347,7 +430,9 @@ export default function GroupCommand() {
                                                     ? 'bg-primary text-primary-foreground'
                                                     : sitrep.type === 'alert'
                                                         ? 'bg-destructive/10 border border-destructive text-destructive'
-                                                        : 'bg-muted'
+                                                        : sitrep.type === 'status'
+                                                          ? 'bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-400'
+                                                          : 'bg-muted'
                                                 }`}>
                                                     {sitrep.message}
                                                 </div>
@@ -373,6 +458,41 @@ export default function GroupCommand() {
                     </Card>
                 </div>
             </div>
+
+            {/* Waypoint Creation Dialog */}
+            <Dialog open={!!pendingWaypoint} onOpenChange={(open) => !open && setPendingWaypoint(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Confirm Tactical Waypoint</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label>Waypoint Name</Label>
+                            <Input
+                                placeholder="e.g. Rally Point Alpha"
+                                value={newWaypointName}
+                                onChange={(e) => setNewWaypointName(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                             <Label>Type</Label>
+                             <div className="font-mono text-sm border p-2 rounded bg-muted uppercase">
+                                {waypointMode}
+                             </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                            Coordinates: {pendingWaypoint?.lat.toFixed(6)}, {pendingWaypoint?.lng.toFixed(6)}
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setPendingWaypoint(null)}>Cancel</Button>
+                        <Button onClick={confirmWaypoint} disabled={createWaypointMutation.isPending || !newWaypointName}>
+                            {createWaypointMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Establish Waypoint
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
       </main>
     </div>

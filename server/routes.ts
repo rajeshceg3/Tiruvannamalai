@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { validateRequest } from "./middleware/validation";
-import { insertVisitSchema, insertGroupSchema, joinGroupSchema } from "@shared/schema";
+import { insertVisitSchema, insertGroupSchema, joinGroupSchema, insertWaypointSchema } from "@shared/schema";
 import { z } from "zod";
 import rateLimit from "express-rate-limit";
 import { setupWebSocket } from "./websocket";
@@ -54,6 +54,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Command Center Routes
   app.get("/api/groups/:id/command-center", requireAuth, groupController.getGroupCommandCenter);
+  app.post("/api/groups/:id/waypoints", requireAuth, validateRequest(insertWaypointSchema), groupController.createWaypoint);
+  app.delete("/api/groups/:id/waypoints/:waypointId", requireAuth, groupController.deleteWaypoint);
 
   const httpServer = createServer(app);
 
