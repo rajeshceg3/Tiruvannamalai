@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, index, doublePrecision } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -186,6 +186,18 @@ export const groupMembers = pgTable("group_members", {
   lastLocation: jsonb("last_location"), // { lat, lng }
   lastSeenAt: timestamp("last_seen_at"),
   lastStatus: text("last_status"), // 'OK', 'SOS', 'MOVING', etc.
+  lastWaypointId: integer("last_waypoint_id"), // Track last visited waypoint to prevent spam
+});
+
+export const waypoints = pgTable("waypoints", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull().references(() => groups.id),
+  name: text("name").notNull(),
+  latitude: doublePrecision("latitude").notNull(),
+  longitude: doublePrecision("longitude").notNull(),
+  radius: integer("radius").notNull().default(50), // meters
+  type: text("type").notNull().default("RALLY"), // RALLY, HAZARD, OBJECTIVE
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const sitreps = pgTable("sitreps", {
@@ -227,6 +239,14 @@ export const insertVisitSchema = createInsertSchema(visits).pick({
   accuracy: z.number().min(0).optional(),
 });
 
+export const insertWaypointSchema = createInsertSchema(waypoints).pick({
+  name: true,
+  latitude: true,
+  longitude: true,
+  type: true,
+  radius: true,
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Visit = typeof visits.$inferSelect;
@@ -234,4 +254,6 @@ export type Journey = typeof journeys.$inferSelect;
 export type Group = typeof groups.$inferSelect;
 export type GroupMember = typeof groupMembers.$inferSelect;
 export type SitRep = typeof sitreps.$inferSelect;
+export type Waypoint = typeof waypoints.$inferSelect;
 export type JoinGroup = z.infer<typeof joinGroupSchema>;
+export type InsertWaypoint = z.infer<typeof insertWaypointSchema>;

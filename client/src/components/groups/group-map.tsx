@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, useMapEvents } from "react-leaflet";
 import { Icon } from "leaflet";
 import { useEffect } from "react";
 
@@ -40,35 +40,61 @@ type GroupMember = {
   isSelf: boolean;
 };
 
+export type MapWaypoint = {
+  id: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+  radius: number;
+  type: string;
+};
+
 interface GroupMapProps {
   members: GroupMember[];
+  waypoints?: MapWaypoint[];
   center?: [number, number]; // Optional center override
+  onMapClick?: (lat: number, lng: number) => void;
+}
+
+// Component to handle map clicks
+function MapEvents({ onClick }: { onClick?: (lat: number, lng: number) => void }) {
+  useMapEvents({
+    click(e) {
+      if (onClick) onClick(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
 }
 
 // Component to auto-center map when members move or initial load
-function MapUpdater({ center, members }: { center?: [number, number], members: GroupMember[] }) {
+function MapUpdater({ center, members, waypoints }: { center?: [number, number], members: GroupMember[], waypoints?: MapWaypoint[] }) {
     const map = useMap();
 
     useEffect(() => {
         if (center) {
             map.setView(center, map.getZoom());
         } else if (members.length > 0) {
-            // Find bounds of all members
-            const locations = members
-                .map(m => m.location)
-                .filter((l): l is MemberLocation => !!l);
+            // Find bounds of all members and waypoints
+            const points: [number, number][] = [];
 
-            if (locations.length > 0) {
-                 const bounds = locations.map(l => [l.lat, l.lng] as [number, number]);
-                 map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+            members.forEach(m => {
+                if (m.location) points.push([m.location.lat, m.location.lng]);
+            });
+
+            if (waypoints) {
+                waypoints.forEach(w => points.push([w.latitude, w.longitude]));
+            }
+
+            if (points.length > 0) {
+                 map.fitBounds(points, { padding: [50, 50], maxZoom: 16 });
             }
         }
-    }, [center, members, map]);
+    }, [center, members, map, waypoints]);
 
     return null;
 }
 
-export function GroupMap({ members, center }: GroupMapProps) {
+export function GroupMap({ members, waypoints, center, onMapClick }: GroupMapProps) {
   // Default to Arunachala coordinates if no center provided
   const defaultCenter: [number, number] = [12.2319, 79.0663];
 
@@ -85,7 +111,28 @@ export function GroupMap({ members, center }: GroupMapProps) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <MapUpdater center={center} members={members} />
+        <MapUpdater center={center} members={members} waypoints={waypoints} />
+        <MapEvents onClick={onMapClick} />
+
+        {waypoints?.map(w => (
+            <Circle
+                key={`wp-${w.id}`}
+                center={[w.latitude, w.longitude]}
+                radius={w.radius}
+                pathOptions={{
+                    color: w.type === 'HAZARD' ? '#ef4444' : w.type === 'OBJECTIVE' ? '#22c55e' : '#3b82f6',
+                    fillColor: w.type === 'HAZARD' ? '#ef4444' : w.type === 'OBJECTIVE' ? '#22c55e' : '#3b82f6',
+                    fillOpacity: 0.2
+                }}
+            >
+                <Popup>
+                     <div className="text-center">
+                        <strong className="block text-sm">{w.name}</strong>
+                        <span className="text-xs uppercase text-muted-foreground">{w.type}</span>
+                    </div>
+                </Popup>
+            </Circle>
+        ))}
 
         {members.map((member) => {
             if (!member.location) return null;

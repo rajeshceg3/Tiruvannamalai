@@ -31,12 +31,54 @@ export async function getGroupCommandCenter(req: Request, res: Response, next: N
 
     const members = await storage.getGroupMembers(groupId);
     const sitreps = await storage.getSitReps(groupId, 50);
+    const waypoints = await storage.getWaypoints(groupId);
 
     res.json({
         group,
         members,
-        sitreps
+        sitreps,
+        waypoints
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createWaypoint(req: Request, res: Response, next: NextFunction) {
+  try {
+    const groupId = parseInt(req.params.id);
+    if (isNaN(groupId)) return res.status(400).json({ message: "Invalid group ID" });
+
+    const group = await storage.getGroup(groupId);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+
+    // Only creator can add waypoints
+    if (group.creatorId !== req.user!.id) {
+        return res.status(403).json({ message: "Only the group commander can add waypoints" });
+    }
+
+    const waypoint = await storage.createWaypoint({ ...req.body, groupId });
+    res.status(201).json(waypoint);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteWaypoint(req: Request, res: Response, next: NextFunction) {
+  try {
+    const groupId = parseInt(req.params.id);
+    const waypointId = parseInt(req.params.waypointId);
+    if (isNaN(groupId) || isNaN(waypointId)) return res.status(400).json({ message: "Invalid IDs" });
+
+    const group = await storage.getGroup(groupId);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+
+    if (group.creatorId !== req.user!.id) {
+        return res.status(403).json({ message: "Only the group commander can delete waypoints" });
+    }
+
+    await storage.deleteWaypoint(waypointId);
+    res.sendStatus(204);
   } catch (error) {
     next(error);
   }

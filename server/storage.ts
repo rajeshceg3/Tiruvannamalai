@@ -14,6 +14,9 @@ import {
   groupMembers,
   type SitRep,
   sitreps,
+  type Waypoint,
+  type InsertWaypoint,
+  waypoints,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gt } from "drizzle-orm";
@@ -50,6 +53,11 @@ export interface IStorage {
   updateGroupMemberStatus(userId: number, groupId: number, updates: Partial<GroupMember>): Promise<void>;
   createSitRep(groupId: number, userId: number, message: string, type?: string): Promise<SitRep>;
   getSitReps(groupId: number, limit?: number): Promise<SitRep[]>;
+
+  // Waypoints
+  createWaypoint(waypoint: InsertWaypoint & { groupId: number }): Promise<Waypoint>;
+  getWaypoints(groupId: number): Promise<Waypoint[]>;
+  deleteWaypoint(id: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -59,12 +67,14 @@ export class MemStorage implements IStorage {
   private groups: Map<number, Group>;
   private groupMembers: Map<number, GroupMember>;
   private sitreps: Map<number, SitRep>;
+  private waypoints: Map<number, Waypoint>;
   private currentUserId: number;
   private currentVisitId: number;
   private currentJourneyId: number;
   private currentGroupId: number;
   private currentGroupMemberId: number;
   private currentSitRepId: number;
+  private currentWaypointId: number;
 
   constructor() {
     this.users = new Map();
@@ -73,12 +83,14 @@ export class MemStorage implements IStorage {
     this.groups = new Map();
     this.groupMembers = new Map();
     this.sitreps = new Map();
+    this.waypoints = new Map();
     this.currentUserId = 1;
     this.currentVisitId = 1;
     this.currentJourneyId = 1;
     this.currentGroupId = 1;
     this.currentGroupMemberId = 1;
     this.currentSitRepId = 1;
+    this.currentWaypointId = 1;
   }
 
   // Static Shrine Data
@@ -217,7 +229,8 @@ export class MemStorage implements IStorage {
       joinedAt: new Date(),
       lastLocation: null,
       lastSeenAt: null,
-      lastStatus: null
+      lastStatus: null,
+      lastWaypointId: null
     };
     this.groupMembers.set(id, member);
     return member;
@@ -274,6 +287,28 @@ export class MemStorage implements IStorage {
           .filter(s => s.groupId === groupId)
           .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
           .slice(0, limit);
+  }
+
+  // Waypoints
+  async createWaypoint(waypoint: InsertWaypoint & { groupId: number }): Promise<Waypoint> {
+      const id = this.currentWaypointId++;
+      const newWaypoint: Waypoint = {
+          ...waypoint,
+          id,
+          createdAt: new Date(),
+          radius: waypoint.radius || 50,
+          type: waypoint.type || "RALLY"
+      };
+      this.waypoints.set(id, newWaypoint);
+      return newWaypoint;
+  }
+
+  async getWaypoints(groupId: number): Promise<Waypoint[]> {
+      return Array.from(this.waypoints.values()).filter(w => w.groupId === groupId);
+  }
+
+  async deleteWaypoint(id: number): Promise<void> {
+      this.waypoints.delete(id);
   }
 }
 
@@ -454,6 +489,20 @@ export class DatabaseStorage implements IStorage {
           .where(eq(sitreps.groupId, groupId))
           .orderBy(desc(sitreps.createdAt))
           .limit(limit);
+  }
+
+  // Waypoints
+  async createWaypoint(waypoint: InsertWaypoint & { groupId: number }): Promise<Waypoint> {
+    const [newWaypoint] = await db.insert(waypoints).values(waypoint).returning();
+    return newWaypoint;
+  }
+
+  async getWaypoints(groupId: number): Promise<Waypoint[]> {
+    return db.select().from(waypoints).where(eq(waypoints.groupId, groupId));
+  }
+
+  async deleteWaypoint(id: number): Promise<void> {
+    await db.delete(waypoints).where(eq(waypoints.id, id));
   }
 }
 

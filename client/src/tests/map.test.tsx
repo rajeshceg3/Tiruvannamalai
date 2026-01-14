@@ -9,7 +9,9 @@ vi.mock("react-leaflet", () => {
     TileLayer: () => <div data-testid="tile-layer" />,
     Marker: ({ children }: any) => <div data-testid="marker">{children}</div>,
     Popup: ({ children }: any) => <div data-testid="popup">{children}</div>,
+    Circle: ({ children }: any) => <div data-testid="circle">{children}</div>,
     useMap: () => ({ setView: vi.fn(), fitBounds: vi.fn(), getZoom: () => 13 }),
+    useMapEvents: () => ({}),
   };
 });
 
