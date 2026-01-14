@@ -94,9 +94,10 @@ export function VisitCard({ visit, shrine }: { visit: Visit, shrine: Shrine }) {
                 variant="outline"
                 className="h-auto"
                 onClick={() => updateNoteMutation.mutate(notes)}
-                disabled={updateNoteMutation.isPending || notes === visit.notes}
+                disabled={updateNoteMutation.isPending || notes === visit.notes || visit.id === -1}
+                title={visit.id === -1 ? "Syncing..." : "Save note"}
               >
-                Save
+                {visit.id === -1 ? "Syncing..." : "Save"}
               </Button>
             </div>
           </div>
