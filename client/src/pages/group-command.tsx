@@ -328,7 +328,7 @@ export default function GroupCommand() {
                         </CardHeader>
                         <CardContent className="flex-1 min-h-0 flex flex-col p-3">
                             <ScrollArea className="flex-1 pr-4">
-                                <div className="space-y-4">
+                                <div className="space-y-4" role="log" aria-live="polite" aria-relevant="additions">
                                     {liveSitreps.map((sitrep, i) => {
                                         const sender = members.find(m => m.userId === sitrep.userId);
                                         const isMe = sitrep.userId === user?.id;

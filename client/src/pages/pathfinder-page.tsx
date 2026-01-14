@@ -117,8 +117,17 @@ export default function PathfinderPage() {
                    return (
                      <Card
                        key={shrine.id}
-                       className={`cursor-pointer transition-colors hover:bg-accent ${selectedShrineId === shrine.id ? 'border-primary' : ''}`}
+                       className={`cursor-pointer transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${selectedShrineId === shrine.id ? 'border-primary' : ''}`}
                        onClick={() => setSelectedShrineId(shrine.id)}
+                       role="button"
+                       tabIndex={0}
+                       onKeyDown={(e) => {
+                         if (e.key === 'Enter' || e.key === ' ') {
+                           e.preventDefault();
+                           setSelectedShrineId(shrine.id);
+                         }
+                       }}
+                       aria-label={`Select ${shrine.name}${isVisited ? ', marked as completed' : ''}`}
                      >
                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                          <CardTitle className="text-sm font-medium">

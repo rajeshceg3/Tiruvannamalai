@@ -171,12 +171,18 @@ export default function DashboardPage() {
                     <p className="text-sm mt-2">Check in to a shrine to start writing.</p>
                   </div>
                 ) : (
-                  visits
-                    .map(visit => {
+                  <>
+                    {visits.slice(0, 50).map(visit => {
                       const shrine = shrines.find(s => s.id === visit.shrineId);
                       if (!shrine) return null;
                       return <VisitCard key={visit.id} visit={visit} shrine={shrine} />;
-                    })
+                    })}
+                    {visits.length > 50 && (
+                       <div className="text-center py-4 text-sm text-muted-foreground">
+                          And {visits.length - 50} more entries...
+                       </div>
+                    )}
+                  </>
                 )}
               </ScrollArea>
             </div>
