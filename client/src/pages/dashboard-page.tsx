@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Journey, Visit, Shrine } from "@shared/schema";
+import { Journey, Visit, Shrine, type InsertVisit } from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -34,7 +34,7 @@ export default function DashboardPage() {
 
   const checkInMutation = useMutation({
     mutationFn: async ({ shrineId, location }: { shrineId: string, location?: GeolocationCoordinates }) => {
-      const payload: any = { shrineId };
+      const payload: InsertVisit = { shrineId };
       if (location) {
         payload.latitude = location.latitude;
         payload.longitude = location.longitude;

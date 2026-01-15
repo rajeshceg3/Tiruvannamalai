@@ -257,3 +257,4 @@ export type SitRep = typeof sitreps.$inferSelect;
 export type Waypoint = typeof waypoints.$inferSelect;
 export type JoinGroup = z.infer<typeof joinGroupSchema>;
 export type InsertWaypoint = z.infer<typeof insertWaypointSchema>;
+export type InsertVisit = z.infer<typeof insertVisitSchema>;

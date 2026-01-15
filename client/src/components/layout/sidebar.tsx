@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Home, Compass, LogOut, Map, BookOpen, Users } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { ConnectionStatus } from "@/components/ui/connection-status";
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -40,6 +41,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
         </div>
       </div>
       <div className="mt-auto px-3 py-2">
+         <ConnectionStatus className="mb-4" />
          <Button
            variant="ghost"
            className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-100"
