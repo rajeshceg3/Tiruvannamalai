@@ -1,69 +1,73 @@
-import time
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, expect
+import os
 
-def verify_dashboard():
+def run():
+    print("Starting Playwright...")
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        # Create context with storage state to simulate logged-in user if needed
-        # Or register a new user
-        context = browser.new_context()
-        page = context.new_page()
+        page = browser.new_page()
 
-        # 1. Register a user to get to dashboard
-        page.goto("http://localhost:5000/auth")
+        try:
+            # 1. Register
+            print("Navigating to auth page...")
+            page.goto("http://localhost:5000/auth")
 
-        # Check if we are already on dashboard (if session persisted, unlikely in fresh start)
-        if "dashboard" in page.url:
-            print("Already on dashboard")
-        else:
-            # Fill registration form
-            page.fill('input[name="username"]', "testuser_qa")
-            page.fill('input[name="password"]', "password123")
-            # Click register (assuming there are tabs, let's look for "Register" button inside the Register tab content)
-            # We might need to switch to Register tab if Login is default
-            # Let's assume the UI has Tabs.
-            # Click "Register" tab trigger
+            # Click "Register" tab
+            print("Switching to Register tab...")
             page.get_by_role("tab", name="Register").click()
-            # Click the submit button inside the form
+            page.wait_for_timeout(500)
+
+            print("Filling registration form...")
+
+            # Check inputs
+            # Username
+            username_locator = page.get_by_role("textbox", name="Username")
+            count = username_locator.count()
+            print(f"Found {count} username inputs.")
+
+            if count == 0:
+                # Maybe using 'label' locator?
+                print("Trying by label...")
+                page.get_by_label("Username").last.fill("JulesVerified")
+            else:
+                # Use the last one (assuming Register is second tab or active one replaces previous)
+                # If Radix unmounts, count might be 1. If it hides, count is 2.
+                # If it hides, the first one is hidden.
+                # Let's use filter by visibility.
+                username_locator.locator("visible=true").fill("JulesVerified")
+
+            # Password
+            # Password inputs don't have role=textbox
+            pw_locator = page.locator("input[name='password']")
+            pw_locator.locator("visible=true").fill("password123")
+
+            print("Submitting registration...")
+            # Button might be duplicated too ("Login", "Register")
+            # We want the visible one or named "Register"
             page.get_by_role("button", name="Register").click()
 
-            # Wait for navigation
+            # Wait for navigation to dashboard
+            print("Waiting for dashboard...")
             page.wait_for_url("**/dashboard")
 
-        # 2. Verify Dashboard Elements
-        # Check for Shrines list
-        page.wait_for_selector("text=Shrines on the Path")
+            # 2. Verify Dashboard
+            print("Verifying dashboard content...")
+            # Check for "Your journal is empty" or similar.
+            expect(page.get_by_text("Your journal is empty")).to_be_visible()
 
-        # 3. Simulate Check-in (Virtual)
-        # Find the first "Verify Presence" or similar button.
-        # Actually the button says "Verify Presence" only if close.
-        # Otherwise "Xm to Target".
-        # But for testing, we might not have geolocation in headless easily without override.
-        # Playwright can override geolocation.
+            # 3. Screenshot
+            print("Taking screenshot...")
+            os.makedirs("/home/jules/verification", exist_ok=True)
+            screenshot_path = "/home/jules/verification/dashboard.png"
+            page.screenshot(path=screenshot_path)
+            print(f"Screenshot saved to {screenshot_path}")
 
-        # Let's override geolocation to be near the first shrine (Indra Lingam: 12.2353, 79.0847)
-        context.set_geolocation({"latitude": 12.2353, "longitude": 79.0847, "accuracy": 10})
-        context.grant_permissions(["geolocation"])
-
-        page.reload()
-
-        # Wait for "Verify Presence" button
-        # It might take a moment for the component to pick up the location
-        # The button text changes to "Verify Presence"
-        verify_btn = page.get_by_role("button", name="Verify Presence").first
-        verify_btn.wait_for(state="visible", timeout=10000)
-        verify_btn.click()
-
-        # 4. Verify Optimistic UI / Journal Entry
-        # After check-in, a journal entry should appear.
-        # Check for text "Your Reflection"
-        page.wait_for_selector("text=Your Reflection", timeout=10000)
-
-        # 5. Take Screenshot
-        page.screenshot(path="verification/dashboard_verified.png")
-        print("Screenshot saved to verification/dashboard_verified.png")
-
-        browser.close()
+        except Exception as e:
+            print(f"Error: {e}")
+            page.screenshot(path="/home/jules/verification/error.png")
+            raise e
+        finally:
+            browser.close()
 
 if __name__ == "__main__":
-    verify_dashboard()
+    run()

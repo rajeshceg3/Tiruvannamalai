@@ -1,3 +1,19 @@
+export type SocketSitRep = {
+  id: number;
+  groupId: number;
+  userId: number;
+  message: string;
+  type: string;
+  createdAt: string;
+};
+
+export type SocketEventMap = {
+  "location_update": { userId: number; location: { lat: number; lng: number } };
+  "beacon_signal": { userId: number; signal: "SOS" | "REGROUP" | "MOVING" };
+  "sitrep": { sitrep: SocketSitRep };
+  "member_update": { userId: number; status: string; type: "member_update" };
+};
+
 export class SocketClient {
   private ws: WebSocket | null = null;
   private listeners: Map<string, Set<(data: any) => void>> = new Map();
@@ -62,12 +78,12 @@ export class SocketClient {
     }
   }
 
-  public on(type: string, callback: (data: any) => void) {
+  public on<K extends keyof SocketEventMap>(type: K, callback: (data: SocketEventMap[K]) => void) {
     if (!this.listeners.has(type)) {
       this.listeners.set(type, new Set());
     }
-    this.listeners.get(type)!.add(callback);
-    return () => this.listeners.get(type)!.delete(callback);
+    this.listeners.get(type)!.add(callback as (data: any) => void);
+    return () => this.listeners.get(type)!.delete(callback as (data: any) => void);
   }
 
   private emit(type: string, data: any) {
