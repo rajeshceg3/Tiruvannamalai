@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+
 export type SocketSitRep = {
   id: number;
   groupId: number;
@@ -14,18 +16,31 @@ export type SocketEventMap = {
   "member_update": { userId: number; status: string; type: "member_update" };
 };
 
+export type ConnectionStatus = "connecting" | "connected" | "disconnected";
+
+type Listener<T> = (data: T) => void;
+
 export class SocketClient {
   private ws: WebSocket | null = null;
-  private listeners: Map<string, Set<(data: any) => void>> = new Map();
+  // Use a map of sets of typed functions.
+  // We use 'any' for the Set content internally to allow storing different callback types in the same Map,
+  // but the public API enforces strict typing.
+  private listeners: Map<string, Set<Listener<any>>> = new Map();
+  private statusListeners: Set<Listener<ConnectionStatus>> = new Set();
+
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private userId: number | null = null;
   private groupId: number | null = null;
+
+  public status: ConnectionStatus = "disconnected";
 
   constructor() {
     this.connect();
   }
 
   private connect() {
+    this.updateStatus("connecting");
+
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host = window.location.host;
     const url = `${protocol}//${host}/ws`;
@@ -33,6 +48,7 @@ export class SocketClient {
     this.ws = new WebSocket(url);
 
     this.ws.onopen = () => {
+      this.updateStatus("connected");
       if (this.userId && this.groupId) {
         this.joinGroup(this.userId, this.groupId);
       }
@@ -48,8 +64,21 @@ export class SocketClient {
     };
 
     this.ws.onclose = () => {
+      this.updateStatus("disconnected");
       this.reconnectTimeout = setTimeout(() => this.connect(), 3000);
     };
+
+    this.ws.onerror = () => {
+       // On error, we rely on onclose to handle reconnection
+       if (this.status !== "disconnected") {
+           this.updateStatus("disconnected");
+       }
+    };
+  }
+
+  private updateStatus(newStatus: ConnectionStatus) {
+      this.status = newStatus;
+      this.statusListeners.forEach(cb => cb(newStatus));
   }
 
   public joinGroup(userId: number, groupId: number) {
@@ -78,17 +107,36 @@ export class SocketClient {
     }
   }
 
-  public on<K extends keyof SocketEventMap>(type: K, callback: (data: SocketEventMap[K]) => void) {
+  public on<K extends keyof SocketEventMap>(type: K, callback: Listener<SocketEventMap[K]>) {
     if (!this.listeners.has(type)) {
       this.listeners.set(type, new Set());
     }
-    this.listeners.get(type)!.add(callback as (data: any) => void);
-    return () => this.listeners.get(type)!.delete(callback as (data: any) => void);
+    // We cast to Listener<any> to store it, but strict type is enforced at the method signature
+    this.listeners.get(type)!.add(callback as Listener<any>);
+    return () => this.listeners.get(type)!.delete(callback as Listener<any>);
   }
 
-  private emit(type: string, data: any) {
+  public onStatusChange(callback: Listener<ConnectionStatus>) {
+      this.statusListeners.add(callback);
+      // Immediately invoke with current status
+      callback(this.status);
+      return () => { this.statusListeners.delete(callback); };
+  }
+
+  private emit<K extends keyof SocketEventMap>(type: K, data: SocketEventMap[K]) {
     this.listeners.get(type)?.forEach(cb => cb(data));
   }
 }
 
 export const socketClient = new SocketClient();
+
+// React Hook for using socket status
+export function useSocketStatus() {
+    const [status, setStatus] = useState<ConnectionStatus>(socketClient.status);
+
+    useEffect(() => {
+        return socketClient.onStatusChange(setStatus);
+    }, []);
+
+    return status;
+}
