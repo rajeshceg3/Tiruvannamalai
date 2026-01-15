@@ -17,9 +17,11 @@ import {
   type Waypoint,
   type InsertWaypoint,
   waypoints,
+  type MovementLog,
+  movementLogs,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, gt } from "drizzle-orm";
+import { eq, and, desc, gt, asc } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 export interface IStorage {
@@ -58,6 +60,10 @@ export interface IStorage {
   createWaypoint(waypoint: InsertWaypoint & { groupId: number }): Promise<Waypoint>;
   getWaypoints(groupId: number): Promise<Waypoint[]>;
   deleteWaypoint(id: number): Promise<void>;
+
+  // AAR / Tactical Logging
+  logMovement(groupId: number, userId: number, lat: number, lng: number, status?: string): Promise<void>;
+  getMovementLogs(groupId: number, startTime?: Date, endTime?: Date): Promise<MovementLog[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -68,6 +74,7 @@ export class MemStorage implements IStorage {
   private groupMembers: Map<number, GroupMember>;
   private sitreps: Map<number, SitRep>;
   private waypoints: Map<number, Waypoint>;
+  private movementLogs: Map<number, MovementLog>;
   private currentUserId: number;
   private currentVisitId: number;
   private currentJourneyId: number;
@@ -75,6 +82,7 @@ export class MemStorage implements IStorage {
   private currentGroupMemberId: number;
   private currentSitRepId: number;
   private currentWaypointId: number;
+  private currentMovementLogId: number;
 
   constructor() {
     this.users = new Map();
@@ -84,6 +92,7 @@ export class MemStorage implements IStorage {
     this.groupMembers = new Map();
     this.sitreps = new Map();
     this.waypoints = new Map();
+    this.movementLogs = new Map();
     this.currentUserId = 1;
     this.currentVisitId = 1;
     this.currentJourneyId = 1;
@@ -91,6 +100,7 @@ export class MemStorage implements IStorage {
     this.currentGroupMemberId = 1;
     this.currentSitRepId = 1;
     this.currentWaypointId = 1;
+    this.currentMovementLogId = 1;
   }
 
   // Static Shrine Data
@@ -172,9 +182,6 @@ export class MemStorage implements IStorage {
     const existing = await this.getJourney(userId);
 
     if (existing) {
-      // Allow re-visiting or updating progress. If new order is greater, update.
-      // If same or less, we generally don't revert progress, but if it's a new "round", we might?
-      // For now, keep "monotonic" logic but ensure we don't break if someone visits an old shrine.
       if (currentShrineOrder > existing.currentShrineOrder) {
         const updated = { ...existing, currentShrineOrder };
         this.journeys.set(existing.id, updated);
@@ -259,7 +266,6 @@ export class MemStorage implements IStorage {
   }
 
   async updateGroupMemberStatus(userId: number, groupId: number, updates: Partial<GroupMember>): Promise<void> {
-      // Find member entry specific to the group
       const member = Array.from(this.groupMembers.values())
           .find(m => m.userId === userId && m.groupId === groupId);
       if (member) {
@@ -309,6 +315,32 @@ export class MemStorage implements IStorage {
 
   async deleteWaypoint(id: number): Promise<void> {
       this.waypoints.delete(id);
+  }
+
+  // AAR / Tactical Logging
+  async logMovement(groupId: number, userId: number, lat: number, lng: number, status?: string): Promise<void> {
+    const id = this.currentMovementLogId++;
+    const log: MovementLog = {
+      id,
+      groupId,
+      userId,
+      latitude: lat,
+      longitude: lng,
+      timestamp: new Date(),
+      status: status || null,
+    };
+    this.movementLogs.set(id, log);
+  }
+
+  async getMovementLogs(groupId: number, startTime?: Date, endTime?: Date): Promise<MovementLog[]> {
+    return Array.from(this.movementLogs.values())
+      .filter(l => {
+        if (l.groupId !== groupId) return false;
+        if (startTime && l.timestamp < startTime) return false;
+        if (endTime && l.timestamp > endTime) return false;
+        return true;
+      })
+      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
   }
 }
 
@@ -387,7 +419,6 @@ export class DatabaseStorage implements IStorage {
     const [existing] = await db.select().from(journeys).where(eq(journeys.userId, userId));
 
     if (existing) {
-      // Only update if the new order is greater than the current one
       if (currentShrineOrder > existing.currentShrineOrder) {
         const [updated] = await db.update(journeys)
           .set({ currentShrineOrder })
@@ -447,7 +478,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserGroup(userId: number): Promise<Group | undefined> {
-    // Basic implementation: just find the most recent group they joined
     const [member] = await db
       .select()
       .from(groupMembers)
@@ -503,6 +533,30 @@ export class DatabaseStorage implements IStorage {
 
   async deleteWaypoint(id: number): Promise<void> {
     await db.delete(waypoints).where(eq(waypoints.id, id));
+  }
+
+  // AAR / Tactical Logging
+  async logMovement(groupId: number, userId: number, lat: number, lng: number, status?: string): Promise<void> {
+    await db.insert(movementLogs).values({
+      groupId,
+      userId,
+      latitude: lat,
+      longitude: lng,
+      status: status || null,
+      timestamp: new Date()
+    });
+  }
+
+  async getMovementLogs(groupId: number, startTime?: Date, endTime?: Date): Promise<MovementLog[]> {
+    // Build query conditions
+    const conditions = [eq(movementLogs.groupId, groupId)];
+    if (startTime) conditions.push(gt(movementLogs.timestamp, startTime));
+    // If endTime is needed, we would add another condition, but currently just startTime support is fine for "last X hours"
+
+    return db.select()
+      .from(movementLogs)
+      .where(and(...conditions))
+      .orderBy(asc(movementLogs.timestamp));
   }
 }
 

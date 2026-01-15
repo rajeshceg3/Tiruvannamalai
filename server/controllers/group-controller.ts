@@ -11,6 +11,33 @@ export async function createGroup(req: Request, res: Response, next: NextFunctio
   }
 }
 
+export async function getAARData(req: Request, res: Response, next: NextFunction) {
+  try {
+    const groupId = parseInt(req.params.id);
+    if (isNaN(groupId)) {
+        return res.status(400).json({ message: "Invalid group ID" });
+    }
+
+    // Security check: User must be in the group
+    const userGroup = await storage.getUserGroup(req.user!.id);
+    if (!userGroup || userGroup.id !== groupId) {
+        return res.status(403).json({ message: "You are not a member of this group" });
+    }
+
+    // Fetch logs from the last 24 hours (for now)
+    const startTime = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const logs = await storage.getMovementLogs(groupId, startTime);
+    const sitreps = await storage.getSitReps(groupId, 1000); // Get more sitreps for AAR
+
+    res.json({
+        logs,
+        sitreps
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function getGroupCommandCenter(req: Request, res: Response, next: NextFunction) {
   try {
     const groupId = parseInt(req.params.id);

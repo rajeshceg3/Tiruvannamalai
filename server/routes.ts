@@ -57,6 +57,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/groups/:id/waypoints", requireAuth, validateRequest(insertWaypointSchema), groupController.createWaypoint);
   app.delete("/api/groups/:id/waypoints/:waypointId", requireAuth, groupController.deleteWaypoint);
 
+  // AAR Route
+  app.get("/api/groups/:id/aar", requireAuth, groupController.getAARData);
+
   const httpServer = createServer(app);
 
   // --- WebSocket Setup ---

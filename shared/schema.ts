@@ -209,6 +209,22 @@ export const sitreps = pgTable("sitreps", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// AAR: Tactical Movement Logging
+export const movementLogs = pgTable("movement_logs", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull().references(() => groups.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  latitude: doublePrecision("latitude").notNull(),
+  longitude: doublePrecision("longitude").notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  status: text("status"), // e.g. 'OK', 'SOS'
+}, (table) => [
+  index("movement_group_idx").on(table.groupId),
+  index("movement_user_idx").on(table.userId),
+  index("movement_time_idx").on(table.timestamp)
+]);
+
+
 // --- Zod Schemas for API Validation ---
 
 export const insertGroupSchema = createInsertSchema(groups).pick({
@@ -255,6 +271,7 @@ export type Group = typeof groups.$inferSelect;
 export type GroupMember = typeof groupMembers.$inferSelect;
 export type SitRep = typeof sitreps.$inferSelect;
 export type Waypoint = typeof waypoints.$inferSelect;
+export type MovementLog = typeof movementLogs.$inferSelect;
 export type JoinGroup = z.infer<typeof joinGroupSchema>;
 export type InsertWaypoint = z.infer<typeof insertWaypointSchema>;
 export type InsertVisit = z.infer<typeof insertVisitSchema>;

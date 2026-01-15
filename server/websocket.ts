@@ -53,6 +53,10 @@ export function setupWebSocket(httpServer: Server) {
     // We trust this because we set it in the upgrade handler
     const currentUserId = (ws as any).userId as number;
 
+    // Rate limiter for movement logging (prevent DB flooding)
+    let lastMovementLogTime = 0;
+    const MOVEMENT_LOG_INTERVAL = 5000; // 5 seconds
+
     ws.on("message", async (data) => {
       try {
         const message = JSON.parse(data.toString());
@@ -88,6 +92,22 @@ export function setupWebSocket(httpServer: Server) {
             lastLocation: message.location, // { lat, lng }
             lastSeenAt: new Date()
           });
+
+          // TACTICAL LOGGING: Persist movement history for AAR
+          // We rate limit this to avoid excessive DB writes
+          const now = Date.now();
+          if (now - lastMovementLogTime > MOVEMENT_LOG_INTERVAL && currentGroupId !== null) {
+             // We don't await this to avoid blocking the websocket loop
+             storage.logMovement(
+                 currentGroupId,
+                 currentUserId,
+                 message.location.lat,
+                 message.location.lng,
+                 "MOVING"
+             ).catch(err => console.error("Error logging movement:", err));
+
+             lastMovementLogTime = now;
+          }
 
           // Broadcast location to others in group
           broadcastToGroup(currentGroupId, {
