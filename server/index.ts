@@ -16,7 +16,7 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https://images.unsplash.com", "https://*.tile.openstreetmap.org"],
-      connectSrc: ["'self'", ...(isProduction ? [] : ["ws:", "wss:"]), "wss:", "ws:"], // Allow WS in production if needed, or specific domains
+      connectSrc: ["'self'", ...(isProduction ? [] : ["ws:", "wss:"])],
     },
   },
 }));
