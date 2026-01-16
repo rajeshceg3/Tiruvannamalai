@@ -59,7 +59,7 @@ export class SocketClient {
         const data = JSON.parse(event.data);
         this.emit(data.type, data);
       } catch (e) {
-        // Silently ignore parse errors in production
+        console.error("Socket message parse error:", e);
       }
     };
 
