@@ -13,8 +13,13 @@ ENV NODE_ENV=production
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
-# Install only production dependencies for the final image
-RUN npm ci --only=production
+
+# Install production dependencies and ensure permission security
+RUN npm ci --only=production && \
+    chown -R node:node /app
+
+# Switch to non-root user for runtime security
+USER node
 
 EXPOSE 5000
 CMD ["npm", "run", "start"]

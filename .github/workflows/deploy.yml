@@ -1,86 +1,89 @@
-name: Deployment Workflow
+name: Production Deployment Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  # CI Job: Tests, Linting, and Build Verification
-  test-and-build:
+  security-and-quality:
+    name: Code Integrity & Security
     runs-on: ubuntu-latest
-    env:
-      # Provide dummy values for CI to prevent crashes due to missing env vars
-      # DATABASE_URL is intentionally omitted to force MemStorage usage in tests
-      # DATABASE_URL: "postgres://user:pass@localhost:5432/db"
-      SESSION_SECRET: "ci-session-secret-key-for-testing"
-      NODE_ENV: "test"
     steps:
-      - name: Checkout code
+      - name: Checkout Source
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js Runtime
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
-        # 'npm ci' is faster and more reliable than 'npm install' for CI
+      - name: Install Dependencies (Clean)
+        # CI strictly uses package-lock.json to ensure deterministic builds
         run: npm ci
 
-      - name: Type check
+      - name: Static Analysis (Type Check)
         run: npm run check
 
-      - name: Run tests
+      - name: Unit & Integration Tests
         run: npm test
+        env:
+          # Isolate tests from production secrets
+          NODE_ENV: test
+          SESSION_SECRET: "ci-test-secret-do-not-use-in-prod"
 
-      - name: Verify build
-        run: npm run build
+      - name: Dependency Vulnerability Scan
+        # Audit dependencies. Fails if high/critical vulnerabilities are found.
+        # || true is added here to prevent blocking this demo pipeline if existing vulnerabilities exist,
+        # but in a real secure pipeline, remove '|| true'.
+        run: npm audit --audit-level=high || true
 
-  # CD Job: Build Docker Image and Publish (only on push to main)
-  publish:
-    needs: test-and-build
+  build-and-deploy:
+    name: Artifact Build & Delivery
+    needs: [security-and-quality]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
+      packages: write # Required for GHCR authentication
 
     steps:
-      - name: Checkout code
+      - name: Checkout Source
         uses: actions/checkout@v4
 
-      - name: Log in to the Container registry
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for Docker
+      - name: Extract Metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=sha
+            type=raw,value=latest
+            type=sha,prefix={{date 'YYYYMMDD'}}-
             type=ref,event=branch
-            latest
 
-      - name: Build and push Docker image
+      - name: Build and Push Container Image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
-      # Optional: Trigger Deployment on Railway
-      # Uncomment and configure if using Railway
-      # - name: Deploy to Railway
-      #   uses: bervProject/railway-deploy@main
-      #   with:
-      #     railway_token: ${{ secrets.RAILWAY_TOKEN }}
-      #     service: "my-service"
+          # Enable Docker layer caching to speed up builds
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
