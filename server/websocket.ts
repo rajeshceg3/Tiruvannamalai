@@ -3,7 +3,7 @@ import { storage } from "./storage";
 import { Server } from "http";
 import { sessionParser } from "./auth";
 import { calculateDistance } from "@shared/geo";
-import { Waypoint } from "@shared/schema";
+import { Waypoint, wsMessageSchema } from "@shared/schema";
 
 interface WebSocketWithUser extends WebSocket {
   userId: number;
@@ -59,10 +59,23 @@ export function setupWebSocket(httpServer: Server) {
 
     ws.on("message", async (data) => {
       try {
-        const message = JSON.parse(data.toString());
+        let raw;
+        try {
+           raw = JSON.parse(data.toString());
+        } catch {
+           return; // Invalid JSON, ignore silently
+        }
+
+        const validation = wsMessageSchema.safeParse(raw);
+        if (!validation.success) {
+           console.error("Invalid WS Message:", validation.error);
+           return;
+        }
+
+        const message = validation.data;
 
         if (message.type === "join_group") {
-          const { groupId } = message; // We ignore claimed userId
+          const { groupId } = message;
 
           // Validate user membership in the requested group
           const member = await storage.getUserGroup(currentUserId);

@@ -275,3 +275,45 @@ export type MovementLog = typeof movementLogs.$inferSelect;
 export type JoinGroup = z.infer<typeof joinGroupSchema>;
 export type InsertWaypoint = z.infer<typeof insertWaypointSchema>;
 export type InsertVisit = z.infer<typeof insertVisitSchema>;
+
+// --- WebSocket Schemas ---
+
+export const wsJoinGroupSchema = z.object({
+  type: z.literal("join_group"),
+  groupId: z.number(),
+  userId: z.number().optional(), // Client sends it, server uses session ID
+});
+
+export const wsLocationUpdateSchema = z.object({
+  type: z.literal("location_update"),
+  location: z.object({
+    lat: z.number(),
+    lng: z.number(),
+    timestamp: z.number().optional(),
+  }),
+});
+
+export const wsBeaconSignalSchema = z.object({
+  type: z.literal("beacon_signal"),
+  signal: z.enum(["SOS", "REGROUP", "MOVING"]),
+});
+
+export const wsSitRepSchema = z.object({
+  type: z.literal("sitrep"),
+  text: z.string(),
+});
+
+export const wsStatusUpdateSchema = z.object({
+  type: z.literal("status_update"),
+  status: z.string(),
+});
+
+export const wsMessageSchema = z.discriminatedUnion("type", [
+  wsJoinGroupSchema,
+  wsLocationUpdateSchema,
+  wsBeaconSignalSchema,
+  wsSitRepSchema,
+  wsStatusUpdateSchema,
+]);
+
+export type WsMessage = z.infer<typeof wsMessageSchema>;
