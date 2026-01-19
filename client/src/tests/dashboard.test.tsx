@@ -12,9 +12,14 @@ vi.mock("@/hooks/use-auth", () => ({
   })
 }));
 
+vi.mock("react-intersection-observer", () => ({
+  useInView: () => ({ ref: vi.fn(), inView: false })
+}));
+
 vi.mock("@tanstack/react-query", () => ({
   useQuery: vi.fn(),
   useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+  useInfiniteQuery: vi.fn(), // Mock added here
   useQueryClient: () => ({
     getQueryData: vi.fn(),
     setQueryData: vi.fn(),
@@ -53,6 +58,8 @@ vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: vi.fn() })
 }));
 
+import { useInfiniteQuery } from "@tanstack/react-query";
+
 describe("DashboardPage", () => {
   afterEach(() => {
     cleanup();
@@ -60,6 +67,13 @@ describe("DashboardPage", () => {
 
   it("renders loading state when data is missing", () => {
     (useQuery as any).mockReturnValue({ data: undefined, isLoading: true });
+    (useInfiniteQuery as any).mockReturnValue({
+        data: undefined,
+        fetchNextPage: vi.fn(),
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        status: 'pending'
+    });
     render(<DashboardPage />);
     const title = screen.queryByText("Dashboard");
     expect(title).toBeNull();
@@ -68,9 +82,16 @@ describe("DashboardPage", () => {
   it("renders dashboard content when data is loaded", () => {
     (useQuery as any).mockImplementation(({ queryKey }: any) => {
       if (queryKey[0] === "/api/shrines") return { data: [{ id: "1", name: "Shrine 1", order: 1 }] };
-      if (queryKey[0] === "/api/visits") return { data: [] };
       if (queryKey[0] === "/api/journey") return { data: { currentShrineOrder: 0 } };
       return { data: null };
+    });
+
+    (useInfiniteQuery as any).mockReturnValue({
+        data: { pages: [[]] },
+        fetchNextPage: vi.fn(),
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        status: 'success'
     });
 
     render(<DashboardPage />);
@@ -82,8 +103,15 @@ describe("DashboardPage", () => {
   it("renders empty journal message when no visits", () => {
     (useQuery as any).mockImplementation(({ queryKey }: any) => {
       if (queryKey[0] === "/api/shrines") return { data: [{ id: "1", name: "Shrine 1", order: 1 }] };
-      if (queryKey[0] === "/api/visits") return { data: [] };
       return { data: null };
+    });
+
+    (useInfiniteQuery as any).mockReturnValue({
+        data: { pages: [[]] },
+        fetchNextPage: vi.fn(),
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        status: 'success'
     });
 
     render(<DashboardPage />);
@@ -96,9 +124,16 @@ describe("DashboardPage", () => {
 
      (useQuery as any).mockImplementation(({ queryKey }: any) => {
       if (queryKey[0] === "/api/shrines") return { data: shrines };
-      if (queryKey[0] === "/api/visits") return { data: visits };
       if (queryKey[0] === "/api/journey") return { data: { currentShrineOrder: 1 } };
       return { data: null };
+    });
+
+    (useInfiniteQuery as any).mockReturnValue({
+        data: { pages: [[...visits]] },
+        fetchNextPage: vi.fn(),
+        hasNextPage: false,
+        isFetchingNextPage: false,
+        status: 'success'
     });
 
     render(<DashboardPage />);
