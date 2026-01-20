@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useInfiniteQuery } from "@tanstack/react-query";
 import { Journey, Visit, Shrine, type InsertVisit } from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,21 +12,47 @@ import { JourneyProgress } from "@/components/dashboard/journey-progress";
 import { VisitCard } from "@/components/dashboard/visit-card";
 import { ShrineList } from "@/components/dashboard/shrine-list";
 import { MobileSidebar } from "@/components/layout/mobile-sidebar";
+import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
+import { useInView } from "react-intersection-observer";
 
 // Dashboard Page: Main entry point for user stats and shrine check-ins
 // Refactored to use modular components for better maintainability
 export default function DashboardPage() {
   const { user } = useAuth(); // Removed logoutMutation as it is now in Sidebar
   const { toast } = useToast();
-  const [visitLimit, setVisitLimit] = useState(50);
+  const { ref, inView } = useInView();
 
   const { data: shrines } = useQuery<Shrine[]>({
     queryKey: ["/api/shrines"]
   });
 
-  const { data: visits } = useQuery<Visit[]>({
-    queryKey: ["/api/visits"]
+  const {
+    data: visitsPageData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    status
+  } = useInfiniteQuery({
+    queryKey: ["/api/visits"],
+    queryFn: async ({ pageParam = 0 }) => {
+      const res = await apiRequest("GET", `/api/visits?limit=20&offset=${pageParam}`);
+      return res.json() as Promise<Visit[]>;
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.length === 20 ? allPages.length * 20 : undefined;
+    },
+    initialPageParam: 0
   });
+
+  useEffect(() => {
+    if (inView && hasNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, fetchNextPage]);
+
+  // Flatten the pages into a single array
+  const visits = visitsPageData?.pages.flat() || [];
 
   const { data: journey } = useQuery<Journey>({
     queryKey: ["/api/journey"]
@@ -47,7 +73,7 @@ export default function DashboardPage() {
       await queryClient.cancelQueries({ queryKey: ["/api/visits"] });
       await queryClient.cancelQueries({ queryKey: ["/api/journey"] });
 
-      const previousVisits = queryClient.getQueryData<Visit[]>(["/api/visits"]);
+      const previousVisits = queryClient.getQueryData(["/api/visits"]);
       const previousJourney = queryClient.getQueryData<Journey>(["/api/journey"]);
 
       // Optimistic Update for Visits (Add temporary visit)
@@ -68,8 +94,14 @@ export default function DashboardPage() {
             } : null
           };
 
-          queryClient.setQueryData<Visit[]>(["/api/visits"], (old) => {
-            return old ? [optimisticVisit, ...old] : [optimisticVisit];
+          queryClient.setQueryData<{ pages: Visit[][], pageParams: any[] }>(["/api/visits"], (old) => {
+             if (!old) return { pages: [[optimisticVisit]], pageParams: [0] };
+             // Prepend to the first page
+             const newFirstPage = [optimisticVisit, ...old.pages[0]];
+             return {
+               ...old,
+               pages: [newFirstPage, ...old.pages.slice(1)]
+             };
           });
 
           // Optimistic Update for Journey
@@ -110,7 +142,7 @@ export default function DashboardPage() {
     },
   });
 
-  if (!shrines || !visits) {
+  if (!shrines || status === 'pending') {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="space-y-4 w-full max-w-lg px-4">
@@ -175,20 +207,26 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <>
-                    {visits.slice(0, visitLimit).map(visit => {
+                    {visits.map(visit => {
                       const shrine = shrines.find(s => s.id === visit.shrineId);
                       if (!shrine) return null;
                       return <VisitCard key={visit.id} visit={visit} shrine={shrine} />;
                     })}
-                    {visits.length > visitLimit && (
-                      <Button
-                        variant="outline"
-                        className="w-full mt-4"
-                        onClick={() => setVisitLimit(prev => prev + 50)}
-                      >
-                        Load More Entries ({visits.length - visitLimit} remaining)
-                      </Button>
-                    )}
+                    <div ref={ref} className="py-4 text-center">
+                       {isFetchingNextPage ? (
+                           <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                       ) : hasNextPage ? (
+                           <Button
+                             variant="ghost"
+                             onClick={() => fetchNextPage()}
+                             className="text-muted-foreground"
+                           >
+                             Load Older Entries
+                           </Button>
+                       ) : visits.length > 0 ? (
+                           <span className="text-xs text-muted-foreground">All entries loaded</span>
+                       ) : null}
+                    </div>
                   </>
                 )}
               </ScrollArea>

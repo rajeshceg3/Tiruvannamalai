@@ -8,7 +8,10 @@ const MAX_ACCURACY_THRESHOLD_METERS = 100;
 
 export async function getVisits(req: Request, res: Response, next: NextFunction) {
   try {
-    const visits = await storage.getVisits(req.user!.id);
+    const limit = parseInt(req.query.limit as string) || 20;
+    const offset = parseInt(req.query.offset as string) || 0;
+
+    const visits = await storage.getVisits(req.user!.id, limit, offset);
     res.json(visits);
   } catch (error) {
     next(error);

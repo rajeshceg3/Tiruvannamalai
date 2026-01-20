@@ -36,7 +36,7 @@ export interface IStorage {
 
   // Visits
   createVisit(userId: number, shrineId: string, notes?: string, isVirtual?: boolean, verifiedLocation?: any): Promise<Visit>;
-  getVisits(userId: number): Promise<Visit[]>;
+  getVisits(userId: number, limit?: number, offset?: number): Promise<Visit[]>;
   updateVisitNote(visitId: number, notes: string): Promise<Visit | undefined>;
 
   // Journey
@@ -156,10 +156,11 @@ export class MemStorage implements IStorage {
     return visit;
   }
 
-  async getVisits(userId: number): Promise<Visit[]> {
+  async getVisits(userId: number, limit: number = 20, offset: number = 0): Promise<Visit[]> {
     return Array.from(this.visits.values())
       .filter((visit) => visit.userId === userId)
-      .sort((a, b) => b.visitedAt.getTime() - a.visitedAt.getTime());
+      .sort((a, b) => b.visitedAt.getTime() - a.visitedAt.getTime())
+      .slice(offset, offset + limit);
   }
 
   async updateVisitNote(visitId: number, notes: string): Promise<Visit | undefined> {
@@ -393,12 +394,14 @@ export class DatabaseStorage implements IStorage {
     return visit;
   }
 
-  async getVisits(userId: number): Promise<Visit[]> {
+  async getVisits(userId: number, limit: number = 20, offset: number = 0): Promise<Visit[]> {
     return db
       .select()
       .from(visits)
       .where(eq(visits.userId, userId))
-      .orderBy(desc(visits.visitedAt));
+      .orderBy(desc(visits.visitedAt))
+      .limit(limit)
+      .offset(offset);
   }
 
   async updateVisitNote(visitId: number, notes: string): Promise<Visit | undefined> {
