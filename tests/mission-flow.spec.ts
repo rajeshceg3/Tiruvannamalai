@@ -6,9 +6,10 @@ test.describe('Tactical Mission Flow', () => {
   const password = 'securepassword123';
 
   test('User can register, login, execute mission (check-in), and view report', async ({ page, context }) => {
-    // Grant geolocation to ensure deterministic behavior (even if we simulate being far away)
+    // Grant geolocation to ensure deterministic behavior
+    // We simulate being at "Indra Lingam" (12.2353, 79.0847) to verify PHYSICAL check-in logic
     await context.grantPermissions(['geolocation']);
-    await context.setGeolocation({ latitude: 0, longitude: 0 }); // Null Island
+    await context.setGeolocation({ latitude: 12.2353, longitude: 79.0847 });
 
     // 1. Infiltration (Registration)
     await page.goto('/auth');
@@ -33,12 +34,14 @@ test.describe('Tactical Mission Flow', () => {
     // Execute Check-in
     await checkInButton.click();
 
-    // 4. Verify Outcome (Virtual Check-in fallback or Location Verified depending on mock)
-    // Since we are at 0,0 and shrines are likely elsewhere, it might be a "Virtual" check-in or "Location access denied" toast if strictly mocked.
-    // However, the code falls back to virtual check-in on error/mismatch.
+    // 4. Verify Outcome (Physical Location Verified)
+    // Since we are at the exact coordinates of Indra Lingam, we expect a verified check-in.
+
+    // Expect the toast to say "Location Verified!"
+    // Using exact: true to avoid matching the screen reader notification which might duplicate the text
+    await expect(page.getByText('Location Verified!', { exact: true })).toBeVisible({ timeout: 10000 });
 
     // Wait for the button state to change to "Visited"
-    // This confirms the optimistic update or server response handled the state change.
     await expect(page.getByRole('button', { name: 'Visited' }).first()).toBeVisible({ timeout: 10000 });
 
     // 5. Journal Verification

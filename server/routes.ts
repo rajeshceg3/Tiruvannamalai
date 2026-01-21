@@ -60,6 +60,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AAR Route
   app.get("/api/groups/:id/aar", requireAuth, groupController.getAARData);
 
+  // Telemetry Route (Public)
+  app.post("/api/telemetry", (req, res) => {
+    const { level, message, context, timestamp } = req.body;
+    // In a real production system, this would stream to Sentry/Datadog/Logstash
+    // For now, we print to stdout so our centralized logger picks it up
+    console.log(JSON.stringify({
+      source: 'client-telemetry',
+      level,
+      message,
+      context,
+      timestamp
+    }));
+    res.status(200).send({ status: 'ok' });
+  });
+
   const httpServer = createServer(app);
 
   // --- WebSocket Setup ---
