@@ -10,6 +10,7 @@ import { setupWebSocket } from "./websocket";
 import * as shrineController from "./controllers/shrine-controller";
 import * as visitController from "./controllers/visit-controller";
 import * as groupController from "./controllers/group-controller";
+import { logger } from "./lib/logger";
 
 // General API rate limiter
 const apiLimiter = rateLimit({
@@ -18,6 +19,14 @@ const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: "Too many requests from this IP, please try again later."
+});
+
+const telemetryLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // Limit each IP to 10 requests per minute
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: "Telemetry rate limit exceeded."
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -61,17 +70,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/groups/:id/aar", requireAuth, groupController.getAARData);
 
   // Telemetry Route (Public)
-  app.post("/api/telemetry", (req, res) => {
+  app.post("/api/telemetry", telemetryLimiter, (req, res) => {
     const { level, message, context, timestamp } = req.body;
-    // In a real production system, this would stream to Sentry/Datadog/Logstash
-    // For now, we print to stdout so our centralized logger picks it up
-    console.log(JSON.stringify({
-      source: 'client-telemetry',
-      level,
-      message,
-      context,
-      timestamp
-    }));
+
+    // Sanitize level
+    const safeLevel = (['info', 'warn', 'error'].includes(level) ? level : 'info') as 'info' | 'warn' | 'error';
+
+    logger[safeLevel](message, { ...context, clientTimestamp: timestamp }, "client-telemetry");
     res.status(200).send({ status: 'ok' });
   });
 

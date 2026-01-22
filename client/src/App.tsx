@@ -7,6 +7,7 @@ import Router from "@/Router";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { telemetry } from "@/lib/logger";
 import { useEffect } from "react";
+import { OfflineIndicator } from "@/components/ui/offline-indicator";
 
 function App() {
   useEffect(() => {
@@ -40,6 +41,7 @@ function App() {
         <AuthProvider>
           <Router />
           <Toaster />
+          <OfflineIndicator />
         </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>
