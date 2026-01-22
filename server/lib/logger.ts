@@ -11,6 +11,46 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
+type LogLevel = "info" | "warn" | "error" | "debug";
+
+function formatLog(level: LogLevel, message: string, context?: Record<string, any>, source = "app") {
+  if (process.env.NODE_ENV === "production") {
+    return JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level,
+      source,
+      message,
+      context,
+    });
+  } else {
+    const formattedTime = new Date().toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+    const contextStr = context ? ` \n${JSON.stringify(context, null, 2)}` : "";
+    return `${formattedTime} [${source}] [${level.toUpperCase()}] ${message}${contextStr}`;
+  }
+}
+
+export const logger = {
+  info: (message: string, context?: Record<string, any>, source = "app") => {
+    console.log(formatLog("info", message, context, source));
+  },
+  warn: (message: string, context?: Record<string, any>, source = "app") => {
+    console.warn(formatLog("warn", message, context, source));
+  },
+  error: (message: string, context?: Record<string, any>, source = "app") => {
+    console.error(formatLog("error", message, context, source));
+  },
+  debug: (message: string, context?: Record<string, any>, source = "app") => {
+     if (process.env.NODE_ENV !== "production") {
+        console.debug(formatLog("debug", message, context, source));
+     }
+  }
+};
+
 export function requestLogger(req: Request, res: Response, duration: number, capturedJsonResponse?: Record<string, any>) {
   const path = req.path;
   const method = req.method;
