@@ -15,6 +15,43 @@ import { MobileSidebar } from "@/components/layout/mobile-sidebar";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useInView } from "react-intersection-observer";
+import { Skeleton } from "@/components/ui/skeleton";
+
+function DashboardSkeleton() {
+  return (
+    <div className="flex h-screen bg-background">
+      <div className="hidden md:flex w-64 border-r flex-col p-4 gap-4">
+         <Skeleton className="h-10 w-full" />
+         <div className="space-y-2">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+         </div>
+      </div>
+      <main className="flex-1 p-4 md:p-8 space-y-8">
+        <div className="flex justify-between items-end">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+        </div>
+        <Skeleton className="h-32 w-full" />
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-4">
+             <Skeleton className="h-8 w-48 mb-4" />
+             <Skeleton className="h-40 w-full" />
+             <Skeleton className="h-40 w-full" />
+          </div>
+          <div className="space-y-4">
+             <Skeleton className="h-8 w-32 mb-4" />
+             <Skeleton className="h-24 w-full" />
+             <Skeleton className="h-24 w-full" />
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
 
 // Dashboard Page: Main entry point for user stats and shrine check-ins
 // Refactored to use modular components for better maintainability
@@ -143,18 +180,7 @@ export default function DashboardPage() {
   });
 
   if (!shrines || status === 'pending') {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="space-y-4 w-full max-w-lg px-4">
-           <div className="h-4 bg-muted animate-pulse rounded w-3/4 mx-auto" />
-           <div className="h-4 bg-muted animate-pulse rounded w-1/2 mx-auto" />
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
-             <div className="h-40 bg-muted animate-pulse rounded" />
-             <div className="h-40 bg-muted animate-pulse rounded" />
-           </div>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   // Handle case where journey is loading separately or default to null
