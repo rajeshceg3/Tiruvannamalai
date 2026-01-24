@@ -16,6 +16,7 @@ import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useInView } from "react-intersection-observer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MissionFailed } from "@/components/ui/mission-failed";
 
 function DashboardSkeleton() {
   return (
@@ -60,7 +61,12 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const { ref, inView } = useInView();
 
-  const { data: shrines } = useQuery<Shrine[]>({
+  const {
+    data: shrines,
+    isError: isShrinesError,
+    error: shrinesError,
+    refetch: refetchShrines
+  } = useQuery<Shrine[]>({
     queryKey: ["/api/shrines"]
   });
 
@@ -69,7 +75,10 @@ export default function DashboardPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    status
+    status,
+    isError: isVisitsError,
+    error: visitsError,
+    refetch: refetchVisits
   } = useInfiniteQuery({
     queryKey: ["/api/visits"],
     queryFn: async ({ pageParam = 0 }) => {
@@ -178,6 +187,18 @@ export default function DashboardPage() {
       }
     },
   });
+
+  if (isShrinesError || isVisitsError) {
+    return (
+      <MissionFailed
+        onRetry={() => {
+          refetchShrines();
+          refetchVisits();
+        }}
+        error={shrinesError || visitsError}
+      />
+    );
+  }
 
   if (!shrines || status === 'pending') {
     return <DashboardSkeleton />;
