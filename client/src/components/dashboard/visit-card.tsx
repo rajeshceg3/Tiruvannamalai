@@ -88,6 +88,7 @@ export function VisitCard({ visit, shrine }: { visit: Visit, shrine: Shrine }) {
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Write your thoughts here..."
                 className="min-h-[60px]"
+                aria-label={`Reflection for ${shrine.name}`}
               />
               <Button
                 size="sm"
@@ -96,6 +97,7 @@ export function VisitCard({ visit, shrine }: { visit: Visit, shrine: Shrine }) {
                 onClick={() => updateNoteMutation.mutate(notes)}
                 disabled={updateNoteMutation.isPending || notes === visit.notes || visit.id === -1}
                 title={visit.id === -1 ? "Syncing..." : "Save note"}
+                aria-label={`Save reflection for ${shrine.name}`}
               >
                 {visit.id === -1 ? "Syncing..." : "Save"}
               </Button>

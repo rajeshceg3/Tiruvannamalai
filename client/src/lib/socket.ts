@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { telemetry } from "@/lib/logger";
 
 export type SocketSitRep = {
   id: number;
@@ -29,6 +30,9 @@ export class SocketClient {
   private statusListeners: Set<Listener<ConnectionStatus>> = new Set();
 
   private reconnectTimeout: NodeJS.Timeout | null = null;
+  private reconnectDelay = 1000;
+  private maxReconnectDelay = 30000;
+
   private userId: number | null = null;
   private groupId: number | null = null;
 
@@ -39,6 +43,11 @@ export class SocketClient {
   }
 
   private connect() {
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+
     this.updateStatus("connecting");
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -49,6 +58,7 @@ export class SocketClient {
 
     this.ws.onopen = () => {
       this.updateStatus("connected");
+      this.reconnectDelay = 1000; // Reset backoff
       if (this.userId && this.groupId) {
         this.joinGroup(this.userId, this.groupId);
       }
@@ -60,16 +70,24 @@ export class SocketClient {
         this.emit(data.type, data);
       } catch (e) {
         console.error("Socket message parse error:", e);
+        telemetry.error("Socket message parse error", { error: String(e) });
       }
     };
 
     this.ws.onclose = () => {
       this.updateStatus("disconnected");
-      this.reconnectTimeout = setTimeout(() => this.connect(), 3000);
+      this.reconnectTimeout = setTimeout(() => {
+        this.connect();
+      }, this.reconnectDelay);
+
+      // Exponential backoff
+      this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.maxReconnectDelay);
     };
 
-    this.ws.onerror = () => {
+    this.ws.onerror = (error) => {
        // On error, we rely on onclose to handle reconnection
+       const errorMessage = (error instanceof ErrorEvent) ? error.message : "Unknown WebSocket Error";
+       telemetry.error("Socket Connection Error", { error: errorMessage });
        if (this.status !== "disconnected") {
            this.updateStatus("disconnected");
        }
