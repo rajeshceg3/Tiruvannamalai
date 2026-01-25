@@ -80,6 +80,7 @@ export function ShrineList({ shrines, visits, onCheckIn }: { shrines: Shrine[], 
                     onClick={() => handleCheckIn(shrine.id)}
                     className="w-full mt-auto"
                     disabled={isVerifying}
+                    aria-label={`Check in to ${shrine.name}`}
                   >
                     {isVerifying ? "Verifying Location..." : "Check In"}
                   </Button>
