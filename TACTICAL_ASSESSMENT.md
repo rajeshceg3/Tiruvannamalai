@@ -1,76 +1,69 @@
 # TACTICAL MISSION ASSESSMENT & STRATEGIC ROADMAP
 
-**DATE:** 2024-10-25
+**DATE:** 2024-10-26
 **TO:** MISSION COMMAND
 **FROM:** JULES (SEAL/ENG)
-**SUBJECT:** COMPREHENSIVE REPOSITORY ASSESSMENT & TRANSFORMATION PLAN
+**SUBJECT:** SITREP - REPOSITORY READINESS & PHASE 2 OPERATIONS
 
 ---
 
 ## 1. EXECUTIVE SUMMARY (BLUF)
 
-**MISSION STATUS:** **OPERATIONAL WITH IMPROVEMENT VECTORS**
-**READINESS LEVEL:** **DEFCON 3**
+**MISSION STATUS:** **OPERATIONAL (GREEN)**
+**READINESS LEVEL:** **DEFCON 4**
 
-The repository is a robust, well-architected Full Stack application (Node.js/Express + React/Vite). It utilizes modern tactical gear (TanStack Query, Zod, TypeScript) to ensure type safety and state management. However, critical gaps exist in "unhappy path" resilience (network failures), accessibility compliance, and automated unit verification for UI components.
+Previous critical vulnerabilities (Session Persistence, Accessibility gaps) have been **neutralized**. The repository now meets baseline production standards. We are transitioning from "Repair" to "Hardening" mode.
 
-The "Happy Path" (Check-in flow) is verified via E2E tests, but component-level isolation and error recovery protocols need hardening to meet elite production standards.
-
----
-
-## 2. TACTICAL ANALYSIS
-
-### A. CODE QUALITY & ARCHITECTURE
-*   **Strength:** Strictly typed schemas (`shared/schema.ts`) shared between frontend and backend prevent data asymmetry.
-*   **Strength:** Feature-based modularity in Dashboard (`ShrineList`, `VisitCard`) promotes maintainability.
-*   **Weakness:** `SocketClient` uses basic reconnection logic (fixed delay) which can cause thundering herd issues in large-scale deployments.
-*   **Gap:** Unit test coverage is sparse (`client/src/tests` exists but misses edge cases for error components).
-*   **Verdict:** **SOLID**. Needs specific hardening on utility classes.
-
-### B. SECURITY HARDENING
-*   **Strength:** `helmet` CSP is active.
-*   **Strength:** Rate limiting (`express-rate-limit`) protects API and Telemetry endpoints.
-*   **Strength:** Auth via `passport` and `express-session` is standard and effective.
-*   **Verdict:** **SECURE**. Continue monitoring CSP reports.
-
-### C. USER EXPERIENCE (UX) & ACCESSIBILITY
-*   **Strength:** `MissionFailed` component exists for catastrophic data failures.
-*   **Strength:** PWA capabilities (Service Workers) are deployed for field operations.
-*   **Gap:** Accessibility (A11y) is basic. Interactive elements in lists lack explicit `aria-label`s, potentially confusing screen reader operators.
-*   **Gap:** Network error recovery for WebSockets is silent; it should be more robust and observable.
-*   **Verdict:** **NEEDS POLISH**. Focus on A11y and Connection Resilience.
-
-### D. DEPLOYMENT & SCALABILITY
-*   **Strength:** Multi-stage Dockerfile ensures small footprint (Alpine based).
-*   **Strength:** GitHub Actions pipeline enforces quality gates before build.
-*   **Verdict:** **READY**.
+Current focus is **Resilience Level 2**: Preventing system-wide failures under load (Thundering Herd) and ensuring field operability during network denial (Offline Mode).
 
 ---
 
-## 3. STRATEGIC ROADMAP (TRANSFORMATION PLAN)
+## 2. SITUATIONAL AWARENESS (CURRENT STATUS)
 
-### PHASE 1: FIELD HARDENING (IMMEDIATE - IN PROGRESS)
-*   **Objective:** Maximize resilience and observability.
-*   **Tactic 1 (Socket):** Implement Exponential Backoff for WebSocket reconnection to prevent server overload during recovery.
-*   **Tactic 2 (Telemetry):** Capture WebSocket connection failures in the centralized telemetry stream.
+### A. SECURITY & AUTHENTICATION [SECURE]
+*   **Status:** **HARDENED**.
+*   **Intel:** Session storage correctly uses `connect-pg-simple` in production environments, eliminating the memory leak risk of `memorystore`. Rate limiting is active on Auth endpoints (10 req/15min).
+*   **Comms:** CSP via `helmet` is active and configured for production safety.
 
-### PHASE 2: TACTICAL POLISH (IMMEDIATE - IN PROGRESS)
-*   **Objective:** Enhance operator accessibility and interface compliance.
-*   **Tactic 1 (A11y):** Inject `aria-label` attributes into high-frequency targets (`Check In`, `Save Note` buttons).
-*   **Tactic 2 (Unit Testing):** Verify the `MissionFailed` component to guarantee error UI availability.
+### B. USER EXPERIENCE (UX) & ACCESSIBILITY [OPERATIONAL]
+*   **Status:** **VERIFIED**.
+*   **Intel:** Critical interactive elements (`ShrineList`, `VisitCard`, `MobileSidebar`) now utilize `aria-label` and `sr-only` text for screen reader compatibility.
+*   **Visuals:** Loading skeletons and Error boundaries (`MissionFailed`) provide robust feedback loops.
 
-### PHASE 3: SCALABILITY (LONG TERM)
-*   **Objective:** Battalion-scale operations.
-*   **Tactic:** Migrate session storage to Redis.
-*   **Tactic:** Implement horizontal scaling for WebSocket handling (Redis Adapter).
+### C. CODE QUALITY & ARCHITECTURE [SOLID]
+*   **Status:** **MAINTAINABLE**.
+*   **Intel:** Strict Zod schemas (`@shared/schema`) ensure data integrity. React Query manages server state effectively.
+*   **Gap:** `SocketClient` remains a singleton side-effect, making isolation testing difficult.
+
+---
+
+## 3. STRATEGIC ROADMAP (PHASE 2)
+
+### VECTOR 1: COMMS HARDENING (IMMEDIATE)
+*   **Objective:** Prevent "Thundering Herd" server collapse during mass reconnection events.
+*   **Tactic:** Implement **Randomized Jitter** (±20%) to the existing WebSocket exponential backoff logic.
+*   **Verification:** Deploy unit tests (`client/src/tests/socket.test.ts`) to validate backoff curves.
+
+### VECTOR 2: FIELD RESILIENCE (NEXT PRIORITY)
+*   **Objective:** Zero data loss during network denial.
+*   **Tactic:** Implement an **Offline Mutation Queue**. Check-ins made while offline must be persisted (e.g., `localStorage`) and automatically replayed when connectivity is restored.
+*   **Status:** Currently, offline users can view data (PWA/Cache) but cannot write data safely.
+
+### VECTOR 3: TELEMETRY OPSEC (FUTURE)
+*   **Objective:** Ensure absolute privacy in logs.
+*   **Tactic:** Audit `TelemetryClient` for potential PII leaks in production logs. Implement strict scrubbing before transmission.
 
 ---
 
 ## 4. IMMEDIATE ACTION ORDERS
 
-1.  **EXECUTE** SocketClient hardening protocol.
-2.  **DEPLOY** Accessibility patches to Dashboard components.
-3.  **VERIFY** Error handling UI via new unit tests.
+1.  **EXECUTE** Operation "Comms Hardening" (Vector 1).
+    *   Refactor `SocketClient` reconnection logic.
+    *   Deploy Unit Tests for Socket logic.
+
+2.  **MAINTAIN** Accessibility standards on all new UI components.
+
+3.  **PREPARE** architecture for Vector 2 (Offline Queue).
 
 **SIGNED:**
 JULES
