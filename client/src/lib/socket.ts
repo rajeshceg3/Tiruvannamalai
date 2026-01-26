@@ -76,12 +76,18 @@ export class SocketClient {
 
     this.ws.onclose = () => {
       this.updateStatus("disconnected");
+
+      // Calculate next base delay (Exponential backoff)
+      const nextDelay = Math.min(this.reconnectDelay * 2, this.maxReconnectDelay);
+      this.reconnectDelay = nextDelay;
+
+      // Apply Random Jitter (±20%) to prevent Thundering Herd
+      const jitter = nextDelay * 0.2 * (Math.random() * 2 - 1);
+      const finalDelay = Math.max(1000, nextDelay + jitter);
+
       this.reconnectTimeout = setTimeout(() => {
         this.connect();
-      }, this.reconnectDelay);
-
-      // Exponential backoff
-      this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.maxReconnectDelay);
+      }, finalDelay);
     };
 
     this.ws.onerror = (error) => {
