@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { telemetry } from "@/lib/logger";
+import { offlineQueue } from "./offline-queue";
 
 export type SocketSitRep = {
   id: number;
@@ -62,6 +63,7 @@ export class SocketClient {
       if (this.userId && this.groupId) {
         this.joinGroup(this.userId, this.groupId);
       }
+      this.processQueue();
     };
 
     this.ws.onmessage = (event) => {
@@ -105,6 +107,41 @@ export class SocketClient {
       this.statusListeners.forEach(cb => cb(newStatus));
   }
 
+  private processQueue() {
+    while (offlineQueue.length > 0) {
+      const item = offlineQueue.peek();
+      if (!item) break;
+
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        let message: any;
+        switch (item.type) {
+          case "location_update":
+            message = { type: "location_update", location: item.payload };
+            break;
+          case "beacon_signal":
+            message = { type: "beacon_signal", signal: item.payload };
+            break;
+          case "sitrep":
+            message = { type: "sitrep", text: item.payload };
+            break;
+          default:
+            offlineQueue.pop(); // Discard unknown
+            continue;
+        }
+
+        try {
+          this.ws.send(JSON.stringify(message));
+          offlineQueue.pop(); // Remove after send
+        } catch (e) {
+          console.error("Failed to flush queue item", e);
+          break; // Stop flushing on error
+        }
+      } else {
+        break; // Connection lost
+      }
+    }
+  }
+
   public joinGroup(userId: number, groupId: number) {
     this.userId = userId;
     this.groupId = groupId;
@@ -114,20 +151,26 @@ export class SocketClient {
   }
 
   public sendLocation(location: { lat: number; lng: number; timestamp: number }) {
-    if (this.ws?.readyState === WebSocket.OPEN) {
+    if (this.ws?.readyState === WebSocket.OPEN && navigator.onLine) {
       this.ws.send(JSON.stringify({ type: "location_update", location }));
+    } else {
+      offlineQueue.push("location_update", location);
     }
   }
 
   public sendBeacon(signal: "SOS" | "REGROUP" | "MOVING") {
-    if (this.ws?.readyState === WebSocket.OPEN) {
+    if (this.ws?.readyState === WebSocket.OPEN && navigator.onLine) {
       this.ws.send(JSON.stringify({ type: "beacon_signal", signal }));
+    } else {
+      offlineQueue.push("beacon_signal", signal);
     }
   }
 
   public sendSitrep(text: string) {
-    if (this.ws?.readyState === WebSocket.OPEN) {
+    if (this.ws?.readyState === WebSocket.OPEN && navigator.onLine) {
       this.ws.send(JSON.stringify({ type: "sitrep", text }));
+    } else {
+      offlineQueue.push("sitrep", text);
     }
   }
 

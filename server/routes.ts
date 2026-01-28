@@ -11,6 +11,7 @@ import * as shrineController from "./controllers/shrine-controller";
 import * as visitController from "./controllers/visit-controller";
 import * as groupController from "./controllers/group-controller";
 import { logger } from "./lib/logger";
+import { scrubPII } from "./lib/scrubber";
 
 // General API rate limiter
 const apiLimiter = rateLimit({
@@ -75,8 +76,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // Sanitize level
     const safeLevel = (['info', 'warn', 'error'].includes(level) ? level : 'info') as 'info' | 'warn' | 'error';
+    const safeContext = scrubPII(context);
 
-    logger[safeLevel](message, { ...context, clientTimestamp: timestamp }, "client-telemetry");
+    logger[safeLevel](message, { ...safeContext, clientTimestamp: timestamp }, "client-telemetry");
     res.status(200).send({ status: 'ok' });
   });
 

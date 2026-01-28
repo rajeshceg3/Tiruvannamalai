@@ -1,9 +1,9 @@
 # TACTICAL MISSION ASSESSMENT & STRATEGIC ROADMAP
 
-**DATE:** 2024-10-27
+**DATE:** CURRENT
 **TO:** MISSION COMMAND
 **FROM:** JULES (SEAL/ENG)
-**SUBJECT:** SITREP - FINAL PRODUCTION READINESS ASSESSMENT
+**SUBJECT:** SITREP - FINAL PRODUCTION READINESS ASSESSMENT & EXECUTION PLAN
 
 ---
 
@@ -14,7 +14,7 @@
 
 **BOTTOM LINE UP FRONT:** The repository is structurally sound and secure for standard operations. Core authentication, data integrity, and communication protocols are **HARDENED**. However, the system is **VULNERABLE** to data loss in intermittent network environments (Field Resilience) and lacks privacy safeguards in telemetry (OpSec).
 
-**RECOMMENDATION:** Execute **Phase 2 (Resilience)** immediately to guarantee zero data loss during offline maneuvers.
+**RECOMMENDATION:** Execute **Phase 1 (Resilience)** and **Phase 2 (OpSec)** immediately to guarantee mission success.
 
 ---
 
@@ -59,15 +59,18 @@
 1.  **Develop `OfflineQueue` System:**
     *   Create a persistent queue (using `localStorage` wrapper) to store outbound messages when WebSocket is disconnected.
     *   **Structure:** `{ type: string, payload: any, timestamp: number, id: string }`.
+    *   **Verification:** Unit tests in `client/src/tests/offline-queue.test.ts`.
 2.  **Refactor `SocketClient`:**
-    *   Intercept `send*` methods.
-    *   IF `disconnected`: Push to `OfflineQueue`.
+    *   Intercept `sendLocation`, `sendBeacon`, `sendSitrep`.
+    *   IF `disconnected` (or not `OPEN`): Push to `OfflineQueue`.
     *   IF `connected`: Attempt send. If fail, push to `OfflineQueue`.
+    *   **Verification:** Update `client/src/tests/socket.test.ts`.
 3.  **Implement `Flush` Protocol:**
-    *   On `reconnect` event, trigger a `processQueue()` method.
+    *   On `reconnect` event (`onopen`), trigger a `processQueue()` method.
     *   Send messages in FIFO order (respecting causal consistency).
 4.  **UX Indicator:**
     *   Update `OfflineIndicator` to show "Pending Uploads: X" when items are queued.
+    *   Ensure troops know their data is safe.
 
 ### PHASE 2: TELEMETRY OPSEC (SECONDARY PRIORITY)
 **OBJECTIVE:** Eliminate PII leakage risks in logs.
@@ -75,9 +78,11 @@
 **TACTICAL STEPS:**
 1.  **Audit Telemetry Endpoint:**
     *   Target: `server/routes.ts` -> `/api/telemetry`.
+    *   Current Status: Logs raw context which may contain PII.
 2.  **Implement Scrubber Middleware:**
-    *   Create `scrubPII(data: any): any` utility.
+    *   Create `scrubPII(data: any): any` utility in `server/lib/scrubber.ts`.
     *   Regex-match and redact: Email patterns, Credit Card patterns, `password` keys, `token` keys.
+    *   **Verification:** Unit tests in `server/tests/scrubber.test.ts`.
 3.  **Deploy:** Ensure no raw user data ever hits the logs.
 
 ---
