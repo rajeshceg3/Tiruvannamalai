@@ -14,9 +14,29 @@ const MockWebSocket = vi.fn(() => {
   };
   wsInstances.push(ws);
   return ws;
-});
+}) as any;
+
+MockWebSocket.OPEN = 1;
+MockWebSocket.CONNECTING = 0;
+MockWebSocket.CLOSING = 2;
+MockWebSocket.CLOSED = 3;
 
 vi.stubGlobal('WebSocket', MockWebSocket);
+
+// Mock offline queue
+const mockPush = vi.fn();
+const mockPeek = vi.fn();
+const mockPop = vi.fn();
+let mockQueueLength = 0;
+
+vi.mock("../lib/offline-queue", () => ({
+  offlineQueue: {
+    push: (...args: any[]) => mockPush(...args),
+    peek: () => mockPeek(),
+    pop: () => mockPop(),
+    get length() { return mockQueueLength; }
+  }
+}));
 
 describe("SocketClient Resilience", () => {
   let socketClient: any;
@@ -25,6 +45,12 @@ describe("SocketClient Resilience", () => {
     wsInstances = [];
     vi.useFakeTimers();
     vi.resetModules();
+    vi.clearAllMocks();
+
+    // Reset queue mock state
+    mockQueueLength = 0;
+    mockPeek.mockReturnValue(undefined);
+
     // Import fresh instance
     const mod = await import("../lib/socket");
     socketClient = mod.socketClient;
@@ -32,7 +58,6 @@ describe("SocketClient Resilience", () => {
 
   afterEach(() => {
     vi.useRealTimers();
-    vi.clearAllMocks();
   });
 
   it("should initialize in connecting state", () => {
@@ -66,14 +91,6 @@ describe("SocketClient Resilience", () => {
     expect(setTimeoutSpy).toHaveBeenCalled();
     const delay = setTimeoutSpy.mock.calls[0][1] as number;
 
-    // Logic:
-    // Initial delay resets to 1000 on open.
-    // On close:
-    // nextDelay = min(1000 * 2, 30000) = 2000.
-    // jitter = 2000 * 0.2 * random (-1 to 1) => +/- 400.
-    // range: [1600, 2400].
-    // Also max(1000, ...) ensures it doesn't go below 1000.
-
     console.log(`Measured Reconnect Delay: ${delay}ms`);
 
     expect(delay).toBeGreaterThanOrEqual(1600);
@@ -89,7 +106,6 @@ describe("SocketClient Resilience", () => {
 
     // 1st Fail
     ws.onclose();
-    // delay ~ 2000 (1600-2400)
 
     // Fast forward time to trigger connect
     vi.runOnlyPendingTimers();
@@ -101,16 +117,38 @@ describe("SocketClient Resilience", () => {
     // 2nd Fail (without opening)
     ws2.onclose();
 
-    // Logic:
-    // Previous reconnectDelay was 2000.
-    // nextDelay = min(2000 * 2, 30000) = 4000.
-    // Jitter: +/- 800.
-    // Range: [3200, 4800].
-
     const secondCallDelay = setTimeoutSpy.mock.calls[1][1] as number;
     console.log(`2nd Reconnect Delay: ${secondCallDelay}ms`);
 
     expect(secondCallDelay).toBeGreaterThanOrEqual(3200);
     expect(secondCallDelay).toBeLessThanOrEqual(4800);
+  });
+
+  it("should queue items when offline", () => {
+    const ws = wsInstances[0];
+    // status is connecting (not connected)
+
+    // sendLocation
+    socketClient.sendLocation({ lat: 1, lng: 2, timestamp: 123 });
+
+    expect(ws.send).not.toHaveBeenCalled();
+    expect(mockPush).toHaveBeenCalledWith("location_update", { lat: 1, lng: 2, timestamp: 123 });
+  });
+
+  it("should flush queue on reconnect", () => {
+     const ws = wsInstances[0];
+     // Setup mock queue to have items
+     mockQueueLength = 1;
+     mockPeek.mockReturnValueOnce({ type: "sitrep", payload: "test", id: "1" });
+     // After pop, length becomes 0 (simulated by logic in test or loop)
+     mockPop.mockImplementation(() => { mockQueueLength = 0; });
+
+     ws.readyState = 1; // OPEN
+
+     // Simulate open
+     ws.onopen();
+
+     expect(ws.send).toHaveBeenCalledWith(JSON.stringify({ type: "sitrep", text: "test" }));
+     expect(mockPop).toHaveBeenCalled();
   });
 });
