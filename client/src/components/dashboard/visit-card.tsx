@@ -57,8 +57,10 @@ export function VisitCard({ visit, shrine }: { visit: Visit, shrine: Shrine }) {
     },
   });
 
+  const isPending = visit.id === -1;
+
   return (
-    <Card className="mb-4 overflow-hidden">
+    <Card className={`mb-4 overflow-hidden transition-opacity ${isPending ? "opacity-70 border-dashed border-primary/50" : ""}`}>
       <div className="flex flex-col md:flex-row">
         <div className="w-full md:w-32 h-32 md:h-auto overflow-hidden relative bg-muted">
           <img

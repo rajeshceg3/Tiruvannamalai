@@ -1,8 +1,9 @@
 import { nanoid } from "nanoid";
+import { InsertVisit } from "@shared/schema";
 
 export interface QueueItem {
   id: string;
-  type: "location_update" | "beacon_signal" | "sitrep";
+  type: "location_update" | "beacon_signal" | "sitrep" | "visit";
   payload: any;
   createdAt: number;
 }
@@ -73,7 +74,9 @@ export class OfflineQueue {
 
   public subscribe(callback: () => void) {
     this.listeners.add(callback);
-    return () => this.listeners.delete(callback);
+    return () => {
+      this.listeners.delete(callback);
+    };
   }
 
   private notifyListeners() {

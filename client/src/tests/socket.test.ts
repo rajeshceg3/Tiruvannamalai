@@ -135,20 +135,25 @@ describe("SocketClient Resilience", () => {
     expect(mockPush).toHaveBeenCalledWith("location_update", { lat: 1, lng: 2, timestamp: 123 });
   });
 
-  it("should flush queue on reconnect", () => {
+  it("should sendRaw if connected", () => {
      const ws = wsInstances[0];
-     // Setup mock queue to have items
-     mockQueueLength = 1;
-     mockPeek.mockReturnValueOnce({ type: "sitrep", payload: "test", id: "1" });
-     // After pop, length becomes 0 (simulated by logic in test or loop)
-     mockPop.mockImplementation(() => { mockQueueLength = 0; });
-
      ws.readyState = 1; // OPEN
 
-     // Simulate open
-     ws.onopen();
+     const message = { type: "test", payload: "data" };
+     const result = socketClient.sendRaw(message);
 
-     expect(ws.send).toHaveBeenCalledWith(JSON.stringify({ type: "sitrep", text: "test" }));
-     expect(mockPop).toHaveBeenCalled();
+     expect(result).toBe(true);
+     expect(ws.send).toHaveBeenCalledWith(JSON.stringify(message));
+  });
+
+  it("should return false from sendRaw if not connected", () => {
+    const ws = wsInstances[0];
+    ws.readyState = 0; // CONNECTING
+
+    const message = { type: "test", payload: "data" };
+    const result = socketClient.sendRaw(message);
+
+    expect(result).toBe(false);
+    expect(ws.send).not.toHaveBeenCalled();
   });
 });
