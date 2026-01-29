@@ -8,6 +8,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { telemetry } from "@/lib/logger";
 import { useEffect } from "react";
 import { OfflineIndicator } from "@/components/ui/offline-indicator";
+import "@/lib/sync-manager";
 
 function App() {
   useEffect(() => {

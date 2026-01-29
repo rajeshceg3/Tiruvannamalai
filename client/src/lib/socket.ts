@@ -63,7 +63,6 @@ export class SocketClient {
       if (this.userId && this.groupId) {
         this.joinGroup(this.userId, this.groupId);
       }
-      this.processQueue();
     };
 
     this.ws.onmessage = (event) => {
@@ -107,39 +106,17 @@ export class SocketClient {
       this.statusListeners.forEach(cb => cb(newStatus));
   }
 
-  private processQueue() {
-    while (offlineQueue.length > 0) {
-      const item = offlineQueue.peek();
-      if (!item) break;
-
-      if (this.ws?.readyState === WebSocket.OPEN) {
-        let message: any;
-        switch (item.type) {
-          case "location_update":
-            message = { type: "location_update", location: item.payload };
-            break;
-          case "beacon_signal":
-            message = { type: "beacon_signal", signal: item.payload };
-            break;
-          case "sitrep":
-            message = { type: "sitrep", text: item.payload };
-            break;
-          default:
-            offlineQueue.pop(); // Discard unknown
-            continue;
-        }
-
-        try {
-          this.ws.send(JSON.stringify(message));
-          offlineQueue.pop(); // Remove after send
-        } catch (e) {
-          console.error("Failed to flush queue item", e);
-          break; // Stop flushing on error
-        }
-      } else {
-        break; // Connection lost
+  public sendRaw(message: any): boolean {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      try {
+        this.ws.send(JSON.stringify(message));
+        return true;
+      } catch (e) {
+        console.error("Socket send error:", e);
+        return false;
       }
     }
+    return false;
   }
 
   public joinGroup(userId: number, groupId: number) {

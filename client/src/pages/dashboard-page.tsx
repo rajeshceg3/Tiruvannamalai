@@ -17,6 +17,7 @@ import { useEffect } from "react";
 import { useInView } from "react-intersection-observer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MissionFailed } from "@/components/ui/mission-failed";
+import { offlineQueue } from "@/lib/offline-queue";
 
 function DashboardSkeleton() {
   return (
@@ -112,6 +113,12 @@ export default function DashboardPage() {
         payload.longitude = location.longitude;
         payload.accuracy = location.accuracy;
       }
+
+      if (!navigator.onLine) {
+        offlineQueue.push("visit", payload);
+        return {}; // Mock response for offline success
+      }
+
       const res = await apiRequest("POST", "/api/visits", payload);
       return res.json();
     },
@@ -176,11 +183,16 @@ export default function DashboardPage() {
       });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/visits"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/journey"] });
+      // Only refetch if online to prevent clearing optimistic data with empty offline fetch
+      if (navigator.onLine) {
+        queryClient.invalidateQueries({ queryKey: ["/api/visits"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/journey"] });
+      }
     },
     onSuccess: (data, variables) => {
-      if (variables.location) {
+      if (!navigator.onLine) {
+        toast({ title: "Check-in Queued", description: "You are offline. Check-in will sync when online." });
+      } else if (variables.location) {
          toast({ title: "Location Verified!", description: "You have physically checked in." });
       } else {
          toast({ title: "Checked in!", description: "Virtual visit recorded." });

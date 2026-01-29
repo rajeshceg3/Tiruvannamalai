@@ -1,8 +1,9 @@
 import { nanoid } from "nanoid";
+import { InsertVisit } from "@shared/schema";
 
 export interface QueueItem {
   id: string;
-  type: "location_update" | "beacon_signal" | "sitrep";
+  type: "location_update" | "beacon_signal" | "sitrep" | "visit";
   payload: any;
   createdAt: number;
 }
