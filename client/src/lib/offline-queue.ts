@@ -74,7 +74,9 @@ export class OfflineQueue {
 
   public subscribe(callback: () => void) {
     this.listeners.add(callback);
-    return () => this.listeners.delete(callback);
+    return () => {
+      this.listeners.delete(callback);
+    };
   }
 
   private notifyListeners() {
