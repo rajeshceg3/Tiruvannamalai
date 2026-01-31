@@ -9,119 +9,67 @@
 
 ## 1. EXECUTIVE SUMMARY (BLUF)
 
-**MISSION STATUS:** **OPERATIONAL - YELLOW**
-**READINESS LEVEL:** **DEFCON 3**
+**MISSION STATUS:** **OPERATIONAL - GREEN**
+**READINESS LEVEL:** **DEFCON 4**
 
-**BOTTOM LINE UP FRONT:** The repository is structurally sound and secure for standard operations. Core authentication, data integrity, and communication protocols are **HARDENED**. However, the system is **VULNERABLE** to data loss in intermittent network environments (Field Resilience) and lacks privacy safeguards in telemetry (OpSec).
-
-**RECOMMENDATION:** Execute **Phase 1 (Resilience)** and **Phase 2 (OpSec)** immediately to guarantee mission success.
+**BOTTOM LINE UP FRONT:** Phases 1 (Resilience) and 2 (OpSec) have been successfully executed and verified. The system is now resilient to network failures and telemetry is sanitized. The current focus shifts to **Deep Observability** (Phase 3) and **Security Hardening** (Phase 4) to achieve full production readiness.
 
 ---
 
 ## 2. SITUATIONAL AWARENESS (CURRENT STATUS)
 
-### A. SECURITY & AUTHENTICATION [SECURE]
+### A. FIELD RESILIENCE (PHASE 1 - COMPLETE)
 *   **Status:** **GREEN**
 *   **Intel:**
-    *   **Password Hashing:** **CONFIRMED**. Uses `scrypt` with salt (via `server/hash.ts`). Military-grade resistance against rainbow table attacks.
-    *   **Session Management:** **CONFIRMED**. `connect-pg-simple` ensures robust session persistence in production.
-    *   **Perimeter Defense:** **CONFIRMED**. `helmet` CSP and Global Rate Limiting (100 req/15min) are active.
-    *   **Input Hygiene:** **CONFIRMED**. Zod schemas enforce strict payload validation across all vectors.
+    *   **Offline Queue:** **ACTIVE**. `OfflineQueue` persists data in `localStorage`.
+    *   **Sync Protocol:** **ACTIVE**. `SyncManager` flushes queue upon reconnection.
+    *   **Verification:** Unit tests (`client/src/tests/socket.test.ts`) confirm queue logic and backoff/jitter strategies.
 
-### B. COMMUNICATIONS & TELEMETRY [STABLE]
+### B. TELEMETRY OPSEC (PHASE 2 - COMPLETE)
 *   **Status:** **GREEN**
 *   **Intel:**
-    *   **Thundering Herd Defense:** **NEUTRALIZED**. `SocketClient` implements exponential backoff with randomized jitter (±20%), verified by unit tests (`client/src/tests/socket.test.ts`).
-    *   **Real-time Ops:** WebSocket architecture is robust for live tracking.
+    *   **Data Sanitation:** **ACTIVE**. `scrubPII` middleware removes sensitive PII from logs.
+    *   **Verification:** Unit tests (`server/tests/scrubber.test.ts`) confirm redaction of emails and secrets.
 
-### C. ARCHITECTURE & RESILIENCE [VULNERABLE]
+### C. OBSERVABILITY & METRICS [PENDING]
 *   **Status:** **YELLOW**
-*   **Critical Gap:** **OFFLINE DATA LOSS**.
-    *   **Finding:** The `SocketClient` drops `location_update`, `beacon_signal`, and `sitrep` packets if the WebSocket connection is not `OPEN`.
-    *   **Risk:** Soldiers/Users operating in signal shadows will lose critical tracking data. This is a potential mission failure point.
-    *   **Evidence:** `client/src/lib/socket.ts` -> `if (this.ws?.readyState === WebSocket.OPEN) { ... }` (No else/fallback).
+*   **Critical Gap:** **LACK OF WEB VITALS**.
+    *   **Finding:** No automated tracking of Client-Side Performance (LCP, FID, CLS).
+    *   **Risk:** Undetected UX degradation in field conditions.
+    *   **Strategy:** Implement `web-vitals` library and report to telemetry endpoint.
 
-### D. USER EXPERIENCE (UX) [OPERATIONAL]
-*   **Status:** **GREEN**
-*   **Intel:**
-    *   **Load Time:** **OPTIMIZED**. Route-based code splitting (`React.lazy`) and Skeletons implemented (`ShellSkeleton`).
-    *   **Feedback Loops:** **ACTIVE**. Toast notifications and Error Boundaries provide clear status updates.
-    *   **Accessibility:** **VERIFIED**. ARIA labels present on key interactive elements.
+### D. SECURITY HARDENING [ONGOING]
+*   **Status:** **YELLOW**
+*   **Gap:** **DEPENDENCY AUDIT & TYPE SAFETY**.
+    *   **Finding:** Need to verify dependency supply chain (`npm audit`) and enforce stricter types in offline mutation handlers.
 
 ---
 
 ## 3. STRATEGIC ROADMAP (EXECUTION PLAN)
 
-### PHASE 1: FIELD RESILIENCE (IMMEDIATE PRIORITY)
-**OBJECTIVE:** Zero data loss during network denial.
+### PHASE 3: DEEP OBSERVABILITY (IMMEDIATE PRIORITY)
+**OBJECTIVE:** Capture and analyze real-user performance metrics.
 
 **TACTICAL STEPS:**
-1.  **Develop `OfflineQueue` System:**
-    *   Create a persistent queue (using `localStorage` wrapper) to store outbound messages when WebSocket is disconnected.
-    *   **Structure:** `{ type: string, payload: any, timestamp: number, id: string }`.
-    *   **Verification:** Unit tests in `client/src/tests/offline-queue.test.ts`.
-2.  **Refactor `SocketClient`:**
-    *   Intercept `sendLocation`, `sendBeacon`, `sendSitrep`.
-    *   IF `disconnected` (or not `OPEN`): Push to `OfflineQueue`.
-    *   IF `connected`: Attempt send. If fail, push to `OfflineQueue`.
-    *   **Verification:** Update `client/src/tests/socket.test.ts`.
-3.  **Implement `Flush` Protocol:**
-    *   On `reconnect` event (`onopen`), trigger a `processQueue()` method.
-    *   Send messages in FIFO order (respecting causal consistency).
-4.  **UX Indicator:**
-    *   Update `OfflineIndicator` to show "Pending Uploads: X" when items are queued.
-    *   Ensure troops know their data is safe.
+1.  **Install `web-vitals`:** Standard industry library for performance metrics.
+2.  **Implement `WebVitalsReporter`:**
+    *   Capture: LCP, FID, CLS, FCP, TTFB.
+    *   Transmit: Send to `/api/telemetry` with `context: { type: 'metric' }`.
+3.  **Integration:** Initialize in `App.tsx`.
 
-### PHASE 2: TELEMETRY OPSEC (SECONDARY PRIORITY)
-**OBJECTIVE:** Eliminate PII leakage risks in logs.
+### PHASE 4: HARDENING & REFINEMENT (SECONDARY PRIORITY)
+**OBJECTIVE:** Eliminate technical debt and vulnerabilities.
 
 **TACTICAL STEPS:**
-1.  **Audit Telemetry Endpoint:**
-    *   Target: `server/routes.ts` -> `/api/telemetry`.
-    *   Current Status: Logs raw context which may contain PII.
-2.  **Implement Scrubber Middleware:**
-    *   Create `scrubPII(data: any): any` utility in `server/lib/scrubber.ts`.
-    *   Regex-match and redact: Email patterns, Credit Card patterns, `password` keys, `token` keys.
-    *   **Verification:** Unit tests in `server/tests/scrubber.test.ts`.
-3.  **Deploy:** Ensure no raw user data ever hits the logs.
-
----
-
-## 4. IMPLEMENTATION SPECS (FOR ENGINEERS)
-
-### A. OFFLINE QUEUE INTERFACE
-```typescript
-interface QueueItem {
-  id: string; // nanoid
-  type: "location_update" | "beacon_signal" | "sitrep";
-  payload: any;
-  createdAt: number;
-}
-
-class OfflineQueue {
-  private queue: QueueItem[] = [];
-
-  // Persist to localStorage on every push/pop
-  // Limit queue size to 1000 items to prevent storage quota issues
-}
-```
-
-### B. SOCKET CLIENT REFACTOR
-```typescript
-// Inside SocketClient
-public sendLocation(location: Location) {
-  if (this.status === 'connected') {
-    this.ws.send(...);
-  } else {
-    this.offlineQueue.push({ type: 'location_update', payload: location });
-  }
-}
-```
+1.  **Refactor Offline Mutations:**
+    *   Ensure `checkInMutation` returns typed `Visit` objects even in offline mock scenarios to prevent runtime errors in optimistic UI logic.
+2.  **Supply Chain Audit:**
+    *   Run `npm audit` and assess risks.
 
 ---
 
 **MISSION DEBRIEF:**
-The foundation is solid. The "Comms Hardening" (Jitter) is successfully deployed. The immediate threat is data loss in the field. Executing Phase 1 will bring this repository to **DEFCON 5 (PRODUCTION READY)**.
+The repository has evolved significantly. Field resilience is no longer a theory but a deployed capability. By executing Phase 3, we gain the "eyes on target" required for sustained operations.
 
 **SIGNED:**
 JULES

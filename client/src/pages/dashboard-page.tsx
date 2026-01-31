@@ -116,7 +116,22 @@ export default function DashboardPage() {
 
       if (!navigator.onLine) {
         offlineQueue.push("visit", payload);
-        return {}; // Mock response for offline success
+        // Return a mock Visit object to satisfy type safety
+        const mockVisit: Visit = {
+            id: -1,
+            userId: user?.id || 0,
+            shrineId,
+            visitedAt: new Date(),
+            notes: null,
+            isVirtual: !location,
+            verifiedLocation: location ? {
+              latitude: location.latitude,
+              longitude: location.longitude,
+              accuracy: location.accuracy,
+              timestamp: new Date().toISOString()
+            } : null
+        };
+        return mockVisit;
       }
 
       const res = await apiRequest("POST", "/api/visits", payload);

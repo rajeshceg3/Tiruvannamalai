@@ -8,10 +8,14 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { telemetry } from "@/lib/logger";
 import { useEffect } from "react";
 import { OfflineIndicator } from "@/components/ui/offline-indicator";
+import { reportWebVitals } from "@/lib/web-vitals";
 import "@/lib/sync-manager";
 
 function App() {
   useEffect(() => {
+    // Initialize Web Vitals reporting
+    reportWebVitals();
+
     const handleError = (event: ErrorEvent) => {
       telemetry.error("Uncaught Exception", {
         message: event.message,
