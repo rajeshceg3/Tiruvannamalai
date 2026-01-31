@@ -67,6 +67,10 @@ export class OfflineQueue {
     return this.queue.length;
   }
 
+  public getItems(): QueueItem[] {
+    return [...this.queue];
+  }
+
   public clear() {
     this.queue = [];
     this.save();
