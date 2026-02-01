@@ -29,17 +29,17 @@ export class SyncManager {
     });
   }
 
-  public async processQueue() {
+  public async processQueue(force = false) {
     if (this.isProcessing) return;
     if (offlineQueue.length === 0) return;
-    if (!navigator.onLine) return;
+    if (!navigator.onLine && !force) return;
 
     this.isProcessing = true;
 
     try {
       while (offlineQueue.length > 0) {
-        // Check connection status
-        if (!navigator.onLine) break;
+        // Check connection status (unless forced)
+        if (!navigator.onLine && !force) break;
 
         const item = offlineQueue.peek();
         if (!item) break;
