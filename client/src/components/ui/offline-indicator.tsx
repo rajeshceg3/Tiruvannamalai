@@ -1,7 +1,7 @@
 import { useOnlineStatus } from "@/hooks/use-online-status";
 import { useSocketStatus } from "@/lib/socket";
 import { offlineQueue, type QueueItem } from "@/lib/offline-queue";
-import { WifiOff, Loader2, AlertTriangle, UploadCloud } from "lucide-react";
+import { WifiOff, Loader2, AlertTriangle, UploadCloud, Trash2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import {
@@ -10,6 +10,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { syncManager } from "@/lib/sync-manager";
+import { useToast } from "@/hooks/use-toast";
 
 function useOfflineQueue() {
   const [items, setItems] = useState<QueueItem[]>(offlineQueue.getItems());
@@ -41,11 +44,31 @@ export function OfflineIndicator() {
   const socketStatus = useSocketStatus();
   const queueItems = useOfflineQueue();
   const queueLength = queueItems.length;
+  const { toast } = useToast();
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // If everything is normal and nothing is pending, hide completely
   if (isOnline && socketStatus === "connected" && queueLength === 0) {
     return null;
   }
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    toast({ title: "Sync Initiated", description: "Force syncing pending data to command." });
+    try {
+      // Force sync attempt even if browser reports offline
+      await syncManager.processQueue(true);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleClear = () => {
+    if (confirm("Purge all pending data? This cannot be undone.")) {
+      offlineQueue.clear();
+      toast({ title: "Queue Purged", description: "All pending operations have been discarded.", variant: "destructive" });
+    }
+  };
 
   let icon = <WifiOff className="h-4 w-4" />;
   let title = "You are currently offline";
@@ -107,6 +130,28 @@ export function OfflineIndicator() {
                  <div className="h-2 w-2 rounded-full bg-yellow-500 mt-1.5" title="Pending" />
               </div>
             ))}
+          </div>
+          <div className="p-2 border-t bg-muted/20 flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 gap-2"
+              onClick={handleSync}
+              disabled={isSyncing}
+              aria-label="Force synchronization now"
+            >
+              <RefreshCw className={cn("h-3 w-3", isSyncing && "animate-spin")} />
+              Sync Now
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="px-3"
+              onClick={handleClear}
+              aria-label="Clear all pending items"
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
           </div>
         </PopoverContent>
       )}
