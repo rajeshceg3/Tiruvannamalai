@@ -29,7 +29,7 @@ test.describe('QA Assessment', () => {
     await page.goto('/auth');
 
     // Check all images have alt text
-    const images = await page.getByRole('img').all();
+    const images = await page.locator('img').all();
     for (const img of images) {
       const alt = await img.getAttribute('alt');
       expect(alt).toBeTruthy();
