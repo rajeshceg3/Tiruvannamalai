@@ -120,14 +120,25 @@ export function OfflineIndicator() {
           </div>
           <div className="max-h-[300px] overflow-auto p-2 space-y-2">
             {queueItems.map((item) => (
-              <div key={item.id} className="flex items-start justify-between rounded-md border p-2 text-sm bg-background">
+              <div key={item.id} className="flex items-center justify-between rounded-md border p-2 text-sm bg-background">
                  <div className="grid gap-1">
                     <span className="font-medium">{getReadableType(item.type)}</span>
                     <span className="text-xs text-muted-foreground">
                       {format(item.createdAt, "HH:mm:ss")}
                     </span>
                  </div>
-                 <div className="h-2 w-2 rounded-full bg-yellow-500 mt-1.5" title="Pending" />
+                 <div className="flex items-center gap-2">
+                   <div className="h-2 w-2 rounded-full bg-yellow-500" title="Pending" />
+                   <Button
+                     variant="ghost"
+                     size="icon"
+                     className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                     onClick={() => offlineQueue.remove(item.id)}
+                     aria-label={`Delete ${getReadableType(item.type)}`}
+                   >
+                     <Trash2 className="h-3 w-3" />
+                   </Button>
+                 </div>
               </div>
             ))}
           </div>

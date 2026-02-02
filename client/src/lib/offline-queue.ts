@@ -71,6 +71,11 @@ export class OfflineQueue {
     return [...this.queue];
   }
 
+  public remove(id: string) {
+    this.queue = this.queue.filter(item => item.id !== id);
+    this.save();
+  }
+
   public clear() {
     this.queue = [];
     this.save();
