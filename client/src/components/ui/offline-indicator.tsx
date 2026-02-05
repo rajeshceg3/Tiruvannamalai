@@ -3,7 +3,7 @@ import { useSocketStatus } from "@/lib/socket";
 import { offlineQueue, type QueueItem } from "@/lib/offline-queue";
 import { WifiOff, Loader2, AlertTriangle, UploadCloud, Trash2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Popover,
   PopoverContent,
@@ -46,6 +46,18 @@ export function OfflineIndicator() {
   const queueLength = queueItems.length;
   const { toast } = useToast();
   const [isSyncing, setIsSyncing] = useState(false);
+  const prevStatus = useRef(socketStatus);
+
+  useEffect(() => {
+    if (prevStatus.current !== "connected" && socketStatus === "connected") {
+      toast({
+        title: "Connection Restored",
+        description: "Syncing data with command...",
+        duration: 3000,
+      });
+    }
+    prevStatus.current = socketStatus;
+  }, [socketStatus, toast]);
 
   // If everything is normal and nothing is pending, hide completely
   if (isOnline && socketStatus === "connected" && queueLength === 0) {
