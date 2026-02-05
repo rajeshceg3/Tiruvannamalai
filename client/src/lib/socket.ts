@@ -41,6 +41,16 @@ export class SocketClient {
 
   constructor() {
     this.connect();
+    if (typeof window !== "undefined") {
+      window.addEventListener("online", () => {
+        this.reconnectDelay = 1000;
+        this.connect();
+      });
+      window.addEventListener("offline", () => {
+        this.ws?.close();
+        this.updateStatus("disconnected");
+      });
+    }
   }
 
   private connect() {
