@@ -4,8 +4,11 @@ import { serveStatic } from "./serve-static";
 import { log, requestLogger } from "./lib/logger";
 import helmet from "helmet";
 import { errorHandler } from "./middleware/error";
+import compression from "compression";
 
 const app = express();
+app.use(compression());
+
 // Security headers
 const isProduction = process.env.NODE_ENV === "production";
 app.use(helmet({

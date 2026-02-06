@@ -1,23 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery, useMutation, useInfiniteQuery } from "@tanstack/react-query";
-import { Journey, Visit, Shrine, type InsertVisit } from "@shared/schema";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { Journey, Visit, Shrine } from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { Sidebar } from "@/components/layout/sidebar";
 import { JourneyProgress } from "@/components/dashboard/journey-progress";
 import { VisitCard } from "@/components/dashboard/visit-card";
 import { ShrineList } from "@/components/dashboard/shrine-list";
 import { MobileSidebar } from "@/components/layout/mobile-sidebar";
 import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
 import { useInView } from "react-intersection-observer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MissionFailed } from "@/components/ui/mission-failed";
-import { offlineQueue } from "@/lib/offline-queue";
+import { useCheckIn } from "@/hooks/use-check-in";
 
 function DashboardSkeleton() {
   return (
@@ -58,8 +56,7 @@ function DashboardSkeleton() {
 // Dashboard Page: Main entry point for user stats and shrine check-ins
 // Refactored to use modular components for better maintainability
 export default function DashboardPage() {
-  const { user } = useAuth(); // Removed logoutMutation as it is now in Sidebar
-  const { toast } = useToast();
+  const { user } = useAuth();
   const { ref, inView } = useInView();
 
   const {
@@ -105,115 +102,8 @@ export default function DashboardPage() {
     queryKey: ["/api/journey"]
   });
 
-  const checkInMutation = useMutation({
-    mutationFn: async ({ shrineId, location }: { shrineId: string, location?: GeolocationCoordinates }) => {
-      const payload: InsertVisit = { shrineId };
-      if (location) {
-        payload.latitude = location.latitude;
-        payload.longitude = location.longitude;
-        payload.accuracy = location.accuracy;
-      }
-
-      if (!navigator.onLine) {
-        offlineQueue.push("visit", payload);
-        // Return a mock Visit object to satisfy type safety
-        const mockVisit: Visit = {
-            id: -1,
-            userId: user?.id || 0,
-            shrineId,
-            visitedAt: new Date(),
-            notes: null,
-            isVirtual: !location,
-            verifiedLocation: location ? {
-              latitude: location.latitude,
-              longitude: location.longitude,
-              accuracy: location.accuracy,
-              timestamp: new Date().toISOString()
-            } : null
-        };
-        return mockVisit;
-      }
-
-      const res = await apiRequest("POST", "/api/visits", payload);
-      return res.json();
-    },
-    onMutate: async ({ shrineId, location }) => {
-      await queryClient.cancelQueries({ queryKey: ["/api/visits"] });
-      await queryClient.cancelQueries({ queryKey: ["/api/journey"] });
-
-      const previousVisits = queryClient.getQueryData(["/api/visits"]);
-      const previousJourney = queryClient.getQueryData<Journey>(["/api/journey"]);
-
-      // Optimistic Update for Visits (Add temporary visit)
-      const shrine = shrines?.find(s => s.id === shrineId);
-      if (shrine) {
-          const optimisticVisit: Visit = {
-            id: -1, // Temporary ID
-            userId: user?.id || 0,
-            shrineId: shrine.id,
-            visitedAt: new Date(), // Date object is compatible with Visit type in frontend usage (drizzle returns Date objects)
-            notes: null,
-            isVirtual: !location,
-            verifiedLocation: location ? {
-              latitude: location.latitude,
-              longitude: location.longitude,
-              accuracy: location.accuracy,
-              timestamp: new Date().toISOString()
-            } : null
-          };
-
-          queryClient.setQueryData<{ pages: Visit[][], pageParams: any[] }>(["/api/visits"], (old) => {
-             if (!old) return { pages: [[optimisticVisit]], pageParams: [0] };
-             // Prepend to the first page
-             const newFirstPage = [optimisticVisit, ...old.pages[0]];
-             return {
-               ...old,
-               pages: [newFirstPage, ...old.pages.slice(1)]
-             };
-          });
-
-          // Optimistic Update for Journey
-          if (journey) {
-               queryClient.setQueryData<Journey>(["/api/journey"], (old) => {
-                    if (!old) return old;
-                    // Assuming monotonic progress, but we just increment for visual feedback
-                    return { ...old, currentShrineOrder: Math.max(old.currentShrineOrder, shrine.order) };
-               });
-          }
-      }
-
-      return { previousVisits, previousJourney };
-    },
-    onError: (err, variables, context) => {
-      if (context?.previousVisits) {
-        queryClient.setQueryData(["/api/visits"], context.previousVisits);
-      }
-      if (context?.previousJourney) {
-        queryClient.setQueryData(["/api/journey"], context.previousJourney);
-      }
-      toast({
-        title: "Check-in failed",
-        description: "Could not record your visit. Please try again.",
-        variant: "destructive"
-      });
-    },
-    onSettled: () => {
-      // Only refetch if online to prevent clearing optimistic data with empty offline fetch
-      if (navigator.onLine) {
-        queryClient.invalidateQueries({ queryKey: ["/api/visits"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/journey"] });
-      }
-    },
-    onSuccess: (data, variables) => {
-      if (!navigator.onLine) {
-        toast({ title: "Check-in Queued", description: "You are offline. Check-in will sync when online." });
-      } else if (variables.location) {
-         toast({ title: "Location Verified!", description: "You have physically checked in." });
-      } else {
-         toast({ title: "Checked in!", description: "Virtual visit recorded." });
-      }
-    },
-  });
+  // Use the extracted hook
+  const checkInMutation = useCheckIn(shrines);
 
   if (isShrinesError || isVisitsError) {
     return (
