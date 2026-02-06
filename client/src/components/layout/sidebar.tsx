@@ -5,7 +5,7 @@ import { Home, Compass, LogOut, Map, BookOpen, Users } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { ConnectionStatus } from "@/components/ui/connection-status";
 
-interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
+type SidebarProps = React.HTMLAttributes<HTMLDivElement>;
 
 export function Sidebar({ className, ...props }: SidebarProps) {
   const [location] = useLocation();

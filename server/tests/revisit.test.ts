@@ -26,7 +26,6 @@ describe("MemStorage Visit Logic", () => {
     // But we can check the implementation: it compares visitedAt vs Date.now() - 10m
 
     // Let's manually manipulate the visitedAt of the stored visit
-    // @ts-ignore - accessing private map for testing hack, or we can use getVisits
     const visits = await storage.getVisits(user.id);
     const existing = visits[0];
 
