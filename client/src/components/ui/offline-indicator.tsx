@@ -98,7 +98,7 @@ export function OfflineIndicator() {
     } else if (socketStatus === "connected") {
       // Must have items pending if we are here
       icon = <UploadCloud className="h-4 w-4 animate-pulse" />;
-      title = "Syncing data...";
+      title = `Syncing data (${queueLength} remaining)...`;
       variantClass = "bg-primary text-primary-foreground";
     }
   }
