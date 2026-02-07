@@ -18,6 +18,7 @@ import { GroupMap, MapWaypoint } from "@/components/groups/group-map";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MissionFailed } from "@/components/ui/mission-failed";
 
 type GroupMember = {
   id: number;
@@ -61,12 +62,24 @@ export default function GroupCommand() {
   const [copied, setCopied] = useState(false);
 
   // 1. Fetch Basic Group Info first to get ID
-  const { data: currentGroup, isLoading: isGroupLoading } = useQuery<Group | null>({
+  const {
+    data: currentGroup,
+    isLoading: isGroupLoading,
+    isError: isGroupError,
+    error: groupError,
+    refetch: refetchGroup
+  } = useQuery<Group | null>({
     queryKey: ["/api/groups/current"],
   });
 
   // 2. Fetch Full Command Center Data
-  const { data: commandData, isLoading } = useQuery<CommandCenterData>({
+  const {
+    data: commandData,
+    isLoading,
+    isError: isCommandError,
+    error: commandError,
+    refetch: refetchCommand
+  } = useQuery<CommandCenterData>({
     queryKey: [`/api/groups/${currentGroup?.id}/command-center`],
     enabled: !!currentGroup?.id,
   });
@@ -228,6 +241,17 @@ export default function GroupCommand() {
           radius: 50 // Default
       });
   };
+
+  if (isGroupError || isCommandError) {
+    return (
+      <div className="flex h-screen bg-background items-center justify-center">
+         <MissionFailed
+           onRetry={() => { refetchGroup(); refetchCommand(); }}
+           error={groupError || commandError}
+         />
+      </div>
+    );
+  }
 
   if (isGroupLoading || isLoading) {
     return (

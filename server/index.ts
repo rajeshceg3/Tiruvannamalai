@@ -5,6 +5,7 @@ import { log, requestLogger } from "./lib/logger";
 import helmet from "helmet";
 import { errorHandler } from "./middleware/error";
 import compression from "compression";
+import { startCronJobs } from "./cron";
 
 const app = express();
 app.use(compression());
@@ -19,7 +20,7 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https://images.unsplash.com", "https://*.tile.openstreetmap.org"],
-      connectSrc: ["'self'", ...(isProduction ? [] : ["ws:", "wss:"])],
+      connectSrc: ["'self'", "ws:", "wss:"],
     },
   },
 }));
@@ -50,6 +51,7 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+  startCronJobs();
 
   // Centralized Error Handler
   app.use(errorHandler);
