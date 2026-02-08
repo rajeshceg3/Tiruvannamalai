@@ -42,7 +42,8 @@ export default function ShrineCard({ shrine, isReversed, index }: ShrineCardProp
           </motion.div>
           <div>
             <h3 className="font-display text-2xl font-semibold text-gray-900">
-              {shrine.emoji} {shrine.name}
+              <span role="img" aria-label="shrine symbol" className="mr-2">{shrine.emoji}</span>
+              {shrine.name}
             </h3>
             <p className="text-meditation font-medium">
               {shrine.direction} • {shrine.element}
@@ -81,7 +82,7 @@ export default function ShrineCard({ shrine, isReversed, index }: ShrineCardProp
           whileTap={{ scale: 0.95 }}
           className="group bg-gradient-to-r from-gray-100 to-gray-200 hover:from-saffron/10 hover:to-terracotta/10 text-gray-700 hover:text-gray-900 px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center space-x-2"
         >
-          <span>🧭</span>
+          <span role="img" aria-label="compass">🧭</span>
           <span>View on Sacred Map</span>
         </motion.button>
       </div>
