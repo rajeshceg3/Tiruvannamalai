@@ -59,7 +59,7 @@ export function ShrineList({ shrines, visits, onCheckIn }: { shrines: Shrine[], 
             <Card className={`h-full flex flex-col ${isVisited ? 'border-primary/50 bg-primary/10' : ''}`}>
               <CardHeader className="p-4">
                 <div className="flex justify-between items-start">
-                  <div className="w-10 h-10 rounded-full bg-background border flex items-center justify-center text-2xl shadow-sm">
+                  <div className="w-10 h-10 rounded-full bg-background border flex items-center justify-center text-2xl shadow-sm" role="img" aria-label={`${shrine.name} symbol`}>
                     {shrine.emoji}
                   </div>
                   {isVisited ? (

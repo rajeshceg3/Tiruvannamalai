@@ -4,10 +4,7 @@ import { Server } from "http";
 import { sessionParser } from "./auth";
 import { wsMessageSchema } from "@shared/schema";
 import { locationService } from "./services/location-service";
-
-interface WebSocketWithUser extends WebSocket {
-  userId: number;
-}
+import { logger } from "./lib/logger";
 
 export function setupWebSocket(httpServer: Server) {
   const wss = new WebSocketServer({ noServer: true });
@@ -50,7 +47,7 @@ export function setupWebSocket(httpServer: Server) {
 
         const validation = wsMessageSchema.safeParse(raw);
         if (!validation.success) {
-           console.error("Invalid WS Message:", validation.error);
+           logger.error("Invalid WS Message:", { error: validation.error });
            return;
         }
 
@@ -133,7 +130,7 @@ export function setupWebSocket(httpServer: Server) {
             });
         }
       } catch (e) {
-        console.error("WS Error:", e);
+        logger.error("WS Error:", { error: e });
       }
     });
 
