@@ -1,4 +1,4 @@
-export function scrubPII(data: any): any {
+export function scrubPII(data: unknown): unknown {
   if (data === null || data === undefined) {
     return data;
   }
@@ -14,8 +14,8 @@ export function scrubPII(data: any): any {
   }
 
   if (typeof data === 'object') {
-    const scrubbedObj: any = {};
-    for (const [key, value] of Object.entries(data)) {
+    const scrubbedObj: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
       // Check sensitive keys
       const sensitiveKeys = ['password', 'token', 'secret', 'authorization', 'cookie', 'credit_card', 'cc_number'];
       if (sensitiveKeys.some(k => key.toLowerCase().includes(k))) {

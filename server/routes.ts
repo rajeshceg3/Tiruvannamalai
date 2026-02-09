@@ -78,7 +78,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const safeLevel = (['info', 'warn', 'error'].includes(level) ? level : 'info') as 'info' | 'warn' | 'error';
     const safeContext = scrubPII(context);
 
-    logger[safeLevel](message, { ...safeContext, clientTimestamp: timestamp }, "client-telemetry");
+    logger[safeLevel](message, { ...(safeContext as object), clientTimestamp: timestamp }, "client-telemetry");
     res.status(200).send({ status: 'ok' });
   });
 

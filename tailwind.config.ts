@@ -63,6 +63,17 @@ export default {
           border: "var(--sidebar-border)",
           ring: "var(--sidebar-ring)",
         },
+        // Custom spiritual color palette
+        saffron: "hsl(24, 100%, 60%)",
+        terracotta: "hsl(19, 56%, 40%)",
+        sage: "hsl(95, 23%, 52%)",
+        sandstone: "hsl(45, 68%, 85%)",
+        temple: "hsl(46, 56%, 96%)",
+        sacred: "hsl(45, 80%, 64%)",
+        meditation: "hsl(207, 90%, 61%)",
+      },
+      boxShadow: {
+        "3xl": "0 35px 60px -15px rgba(0, 0, 0, 0.3)",
       },
       keyframes: {
         "accordion-down": {

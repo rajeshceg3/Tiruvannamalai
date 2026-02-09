@@ -77,7 +77,7 @@ export default function HomePage() {
       <div className="container mx-auto px-4 py-24">
         <div className="grid md:grid-cols-3 gap-12 text-center">
           <div className="space-y-4">
-            <div className="text-4xl mb-4">🕉️</div>
+            <div className="text-4xl mb-4" role="img" aria-label="Sacred Om Symbol">🕉️</div>
             <h3 className="text-2xl font-semibold">Ancient Wisdom</h3>
             <p className="text-muted-foreground">
               Learn the significance of each Lingam and the elemental energies they represent.

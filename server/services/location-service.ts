@@ -1,6 +1,7 @@
 import { storage } from "../storage";
 import { calculateDistance } from "@shared/geo";
 import { Waypoint, SitRep } from "@shared/schema";
+import { logger } from "../lib/logger";
 
 class LocationService {
   // Cache for geofencing optimization
@@ -41,7 +42,7 @@ class LocationService {
         location.lat,
         location.lng,
         "MOVING"
-      ).catch(err => console.error("Error logging movement:", err));
+      ).catch(err => logger.error("Error logging movement:", { error: err }));
 
       this.lastMovementLog.set(userId, now);
       movementLogged = true;
