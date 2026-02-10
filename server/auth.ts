@@ -1,5 +1,5 @@
 import { IStorage } from "./storage";
-import { User, InsertUser, insertUserSchema } from "@shared/schema";
+import { User, insertUserSchema } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import connectPgSimple from "connect-pg-simple";
@@ -11,6 +11,7 @@ import rateLimit from "express-rate-limit";
 import { validateRequest } from "./middleware/validation";
 
 export function sanitizeUser(user: User) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password, ...safeUser } = user;
   return safeUser;
 }
@@ -24,6 +25,7 @@ const authLimiter = rateLimit({
 });
 
 // Export the session parser so it can be used by WebSocket upgrades
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export let sessionParser: any;
 
 export function setupAuth(app: Express, storage: IStorage) {

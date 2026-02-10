@@ -37,7 +37,9 @@ export default function MissionDebriefPage() {
       <Sidebar className="hidden md:flex" />
       <main className="flex-1 overflow-auto p-4 md:p-8">
         <header className="md:hidden flex justify-between items-center mb-6">
-           <h1 className="text-xl font-bold">Sacred Steps</h1>
+           <h1 className="text-xl font-bold flex items-center gap-2">
+             Sacred Steps <span role="img" aria-label="Sacred Om Symbol">🕉️</span>
+           </h1>
            <MobileSidebar />
         </header>
         <div className="max-w-6xl mx-auto space-y-8">
