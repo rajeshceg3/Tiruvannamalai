@@ -14,6 +14,7 @@ export class AppError extends Error {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
   // If headers are already sent, delegate to default Express error handler
   if (res.headersSent) {

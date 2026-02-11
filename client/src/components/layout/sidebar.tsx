@@ -22,8 +22,8 @@ export function Sidebar({ className, ...props }: SidebarProps) {
     <div className={cn("pb-12 w-64 border-r bg-sidebar text-sidebar-foreground", className)} {...props}>
       <div className="space-y-4 py-4">
         <div className="px-3 py-2">
-          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
-            Sacred Steps
+          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight flex items-center gap-2">
+            Sacred Steps <span role="img" aria-label="Sacred Om Symbol">🕉️</span>
           </h2>
           <div className="space-y-1">
             {navItems.map((item) => (

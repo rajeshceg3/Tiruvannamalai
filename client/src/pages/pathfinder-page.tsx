@@ -71,7 +71,9 @@ export default function PathfinderPage() {
 
       <main className="flex-1 overflow-auto p-4 md:p-8 relative">
         <header className="md:hidden flex justify-between items-center mb-6">
-           <h1 className="text-xl font-bold">Sacred Steps</h1>
+           <h1 className="text-xl font-bold flex items-center gap-2">
+             Sacred Steps <span role="img" aria-label="Sacred Om Symbol">🕉️</span>
+           </h1>
            <MobileSidebar />
         </header>
 

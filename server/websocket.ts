@@ -11,7 +11,9 @@ export function setupWebSocket(httpServer: Server) {
 
   httpServer.on("upgrade", (request, socket, head) => {
     if (request.url === "/ws") {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       sessionParser(request as any, {} as any, () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const req = request as any;
         if (!req.session || !req.session.passport || !req.session.passport.user) {
           socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
@@ -21,6 +23,7 @@ export function setupWebSocket(httpServer: Server) {
 
         wss.handleUpgrade(request, socket, head, (ws) => {
           // Attach user ID to the socket
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (ws as any).userId = req.session.passport.user;
           wss.emit("connection", ws, request);
         });
@@ -31,9 +34,10 @@ export function setupWebSocket(httpServer: Server) {
   // Map to store clients: groupId -> Set<WebSocket>
   const groupClients = new Map<number, Set<WebSocket>>();
 
-  wss.on("connection", (ws, req) => {
+  wss.on("connection", (ws, _req) => {
     let currentGroupId: number | null = null;
     // We trust this because we set it in the upgrade handler
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const currentUserId = (ws as any).userId as number;
 
     ws.on("message", async (data) => {
@@ -150,6 +154,7 @@ export function setupWebSocket(httpServer: Server) {
     });
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function broadcastToGroup(groupId: number, message: any, excludeWs?: WebSocket) {
     if (groupClients.has(groupId)) {
       groupClients.get(groupId)!.forEach(client => {

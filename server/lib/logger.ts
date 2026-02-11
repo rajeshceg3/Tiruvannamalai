@@ -13,6 +13,7 @@ export function log(message: string, source = "express") {
 
 type LogLevel = "info" | "warn" | "error" | "debug";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function formatLog(level: LogLevel, message: string, context?: Record<string, any>, source = "app") {
   if (process.env.NODE_ENV === "production") {
     return JSON.stringify({
@@ -35,15 +36,19 @@ function formatLog(level: LogLevel, message: string, context?: Record<string, an
 }
 
 export const logger = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   info: (message: string, context?: Record<string, any>, source = "app") => {
     console.log(formatLog("info", message, context, source));
   },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   warn: (message: string, context?: Record<string, any>, source = "app") => {
     console.warn(formatLog("warn", message, context, source));
   },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   error: (message: string, context?: Record<string, any>, source = "app") => {
     console.error(formatLog("error", message, context, source));
   },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   debug: (message: string, context?: Record<string, any>, source = "app") => {
      if (process.env.NODE_ENV !== "production") {
         console.debug(formatLog("debug", message, context, source));
@@ -51,6 +56,7 @@ export const logger = {
   }
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function requestLogger(req: Request, res: Response, duration: number, capturedJsonResponse?: Record<string, any>) {
   const path = req.path;
   const method = req.method;

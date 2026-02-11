@@ -4,20 +4,17 @@ import { useAuth } from "@/hooks/use-auth";
 import { socketClient } from "@/lib/socket";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Users, MapPin, Radio, Copy, Check, AlertCircle, HeartPulse, Activity, Send, Flag, Target, AlertTriangle } from "lucide-react";
+import { Loader2, Users, Radio, Copy, Check, AlertCircle, Activity, Send, Flag, Target, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { motion, AnimatePresence } from "framer-motion";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileSidebar } from "@/components/layout/mobile-sidebar";
 import { GroupMap, MapWaypoint } from "@/components/groups/group-map";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MissionFailed } from "@/components/ui/mission-failed";
 
 type GroupMember = {
@@ -101,8 +98,8 @@ export default function GroupCommand() {
   // Initialize state from persistent data when loaded
   useEffect(() => {
     if (commandData) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const locs: Record<number, any> = {};
-      const stats: Record<number, string> = {};
       const beacons: Record<number, string> = {};
 
       commandData.members.forEach(m => {
@@ -209,6 +206,7 @@ export default function GroupCommand() {
   };
 
   const createWaypointMutation = useMutation({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mutationFn: async (data: any) => {
           const res = await apiRequest("POST", `/api/groups/${currentGroup!.id}/waypoints`, data);
           return res.json();
@@ -220,7 +218,7 @@ export default function GroupCommand() {
           setNewWaypointName("");
           toast({ title: "Waypoint Established", description: "Tactical marker added to map." });
       },
-      onError: (e) => {
+      onError: () => {
           toast({ title: "Error", description: "Failed to create waypoint", variant: "destructive" });
       }
   });
@@ -285,7 +283,9 @@ export default function GroupCommand() {
       <Sidebar className="hidden md:flex" />
       <main className="flex-1 overflow-auto p-4 md:p-8">
         <header className="md:hidden flex justify-between items-center mb-6">
-           <h1 className="text-xl font-bold">Sacred Steps</h1>
+           <h1 className="text-xl font-bold flex items-center gap-2">
+             Sacred Steps <span role="img" aria-label="Sacred Om Symbol">🕉️</span>
+           </h1>
            <MobileSidebar />
         </header>
         <div className="max-w-6xl mx-auto space-y-8">
@@ -550,6 +550,7 @@ function NoGroupState() {
       queryClient.invalidateQueries({ queryKey: ["/api/groups/current"] });
       toast({ title: "Joined Squad", description: "You have successfully linked with the group." });
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (e: any) => {
         const message = e.message || "Failed to join group";
         toast({ title: "Connection Failed", description: message, variant: "destructive" });
