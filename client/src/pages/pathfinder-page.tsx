@@ -6,7 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { Sidebar } from "@/components/layout/sidebar"; // Assuming this exists or similar layout
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { MobileSidebar } from "@/components/layout/mobile-sidebar";

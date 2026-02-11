@@ -192,10 +192,8 @@ function AARPlayer({ logs, sitreps }: { logs: MovementLog[], sitreps: SitRep[] }
 
                 setCurrentTime(prev => {
                     // Calculate simulated time advance
-                    const advance = delta * playbackSpeed * 10; // Base speed: 10ms real = 100ms sim at 1x? No.
                     // Let's say at 1x, 1 real second = 1 second sim.
                     // delta is in ms.
-                    // advance = delta * playbackSpeed
 
                     const newTime = prev + (delta * playbackSpeed);
 

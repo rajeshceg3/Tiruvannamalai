@@ -47,6 +47,7 @@ describe("OfflineQueue", () => {
 
   it("should limit size", () => {
     // Access private property for testing
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (queue as any).MAX_SIZE = 5;
 
     for (let i = 0; i < 10; i++) {

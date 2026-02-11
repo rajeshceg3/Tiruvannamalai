@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Home, Compass, LogOut, Map, BookOpen, Users } from "lucide-react";
+import { Home, Compass, LogOut, BookOpen, Users } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { ConnectionStatus } from "@/components/ui/connection-status";
 

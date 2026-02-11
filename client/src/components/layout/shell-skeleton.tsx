@@ -1,5 +1,4 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function ShellSkeleton() {
   return (

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { Journey, Visit, Shrine } from "@shared/schema";

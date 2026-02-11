@@ -5,7 +5,7 @@ test.describe('Offline UX Transitions', () => {
   const username = `operator_${nanoid(4)}`;
   const password = 'securepassword123';
 
-  test.beforeEach(async ({ page, context }) => {
+  test.beforeEach(async ({ page }) => {
     // 1. Setup User
     await page.goto('/auth');
     await page.getByRole('tab', { name: 'Register' }).click();

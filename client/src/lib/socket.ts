@@ -27,6 +27,7 @@ export class SocketClient {
   // Use a map of sets of typed functions.
   // We use 'any' for the Set content internally to allow storing different callback types in the same Map,
   // but the public API enforces strict typing.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private listeners: Map<string, Set<Listener<any>>> = new Map();
   private statusListeners: Set<Listener<ConnectionStatus>> = new Set();
 
@@ -116,6 +117,7 @@ export class SocketClient {
       this.statusListeners.forEach(cb => cb(newStatus));
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public sendRaw(message: any): boolean {
     if (this.ws?.readyState === WebSocket.OPEN) {
       try {
@@ -166,7 +168,9 @@ export class SocketClient {
       this.listeners.set(type, new Set());
     }
     // We cast to Listener<any> to store it, but strict type is enforced at the method signature
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.listeners.get(type)!.add(callback as Listener<any>);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return () => this.listeners.get(type)!.delete(callback as Listener<any>);
   }
 

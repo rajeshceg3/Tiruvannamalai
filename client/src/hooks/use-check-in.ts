@@ -66,6 +66,7 @@ export function useCheckIn(shrines: Shrine[] | undefined) {
             } : null
           };
 
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           queryClient.setQueryData<{ pages: Visit[][], pageParams: any[] }>(["/api/visits"], (old) => {
              if (!old) return { pages: [[optimisticVisit]], pageParams: [0] };
              // Prepend to the first page
@@ -91,7 +92,7 @@ export function useCheckIn(shrines: Shrine[] | undefined) {
 
       return { previousVisits, previousJourney };
     },
-    onError: (err, variables, context) => {
+    onError: (_err, _variables, context) => {
       if (context?.previousVisits) {
         queryClient.setQueryData(["/api/visits"], context.previousVisits);
       }

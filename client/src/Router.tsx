@@ -12,6 +12,7 @@ const GroupCommandPage = lazy(() => import("@/pages/group-command"));
 const MissionDebriefPage = lazy(() => import("@/pages/mission-debrief"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ProtectedRoute({ component: Component, ...rest }: any) {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
@@ -38,7 +39,7 @@ export default function Router() {
       <Switch>
         <Route path="/auth" component={AuthPage} />
 
-        <Route path="/" component={(props: any) => {
+        <Route path="/" component={() => {
             const { user, isLoading } = useAuth();
             const [, setLocation] = useLocation();
 
@@ -48,7 +49,7 @@ export default function Router() {
                 setLocation("/dashboard");
                 return null;
             }
-            return <HomePage {...props} />;
+            return <HomePage />;
         }} />
 
         {/* Protected Routes */}

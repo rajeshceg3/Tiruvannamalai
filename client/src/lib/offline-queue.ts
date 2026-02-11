@@ -1,9 +1,9 @@
 import { nanoid } from "nanoid";
-import { InsertVisit } from "@shared/schema";
 
 export interface QueueItem {
   id: string;
   type: "location_update" | "beacon_signal" | "sitrep" | "visit";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   payload: any;
   createdAt: number;
 }
@@ -39,6 +39,7 @@ export class OfflineQueue {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public push(type: QueueItem["type"], payload: any) {
     if (this.queue.length >= this.MAX_SIZE) {
       this.queue.shift(); // Drop oldest

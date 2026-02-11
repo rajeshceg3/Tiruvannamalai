@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock implementation for WebSocket
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let wsInstances: any[] = [];
 const MockWebSocket = vi.fn(() => {
   const ws = {
@@ -14,6 +15,7 @@ const MockWebSocket = vi.fn(() => {
   };
   wsInstances.push(ws);
   return ws;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }) as any;
 
 MockWebSocket.OPEN = 1;
@@ -31,6 +33,7 @@ let mockQueueLength = 0;
 
 vi.mock("../lib/offline-queue", () => ({
   offlineQueue: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     push: (...args: any[]) => mockPush(...args),
     peek: () => mockPeek(),
     pop: () => mockPop(),
@@ -39,6 +42,7 @@ vi.mock("../lib/offline-queue", () => ({
 }));
 
 describe("SocketClient Resilience", () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let socketClient: any;
 
   beforeEach(async () => {

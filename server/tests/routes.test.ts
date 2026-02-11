@@ -3,12 +3,11 @@ import request from "supertest";
 import express from "express";
 import { registerRoutes } from "../routes";
 import { Server } from "http";
-import session from "express-session";
-import passport from "passport";
 
 describe("API Routes", () => {
   let app: express.Express;
   let server: Server;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let agent: any;
 
   beforeAll(async () => {
