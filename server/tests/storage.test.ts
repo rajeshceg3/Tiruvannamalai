@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { MemStorage } from "../storage";
-import { shrineData } from "@shared/schema";
 
 describe("MemStorage", () => {
   let storage: MemStorage;

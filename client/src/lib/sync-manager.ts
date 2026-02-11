@@ -76,6 +76,7 @@ export class SyncManager {
                break;
            }
 
+           // eslint-disable-next-line @typescript-eslint/no-explicit-any
            let message: any;
            switch (item.type) {
              case "location_update":

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { offlineQueue } from "../lib/offline-queue";
 import { socketClient } from "../lib/socket";
 import { apiRequest } from "../lib/queryClient";
@@ -35,6 +35,7 @@ vi.mock("../lib/logger", () => ({
 }));
 
 describe("SyncManager", () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let syncManager: any;
 
   beforeEach(async () => {
@@ -57,9 +58,11 @@ describe("SyncManager", () => {
 
     let queueLength = 1;
     vi.spyOn(offlineQueue, 'length', 'get').mockImplementation(() => queueLength);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(offlineQueue.peek).mockReturnValue(visitItem as any);
     vi.mocked(offlineQueue.pop).mockImplementation(() => {
         queueLength = 0;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return visitItem as any;
     });
 
@@ -78,9 +81,11 @@ describe("SyncManager", () => {
      let queueLength = 1;
      vi.spyOn(offlineQueue, 'length', 'get').mockImplementation(() => queueLength);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(offlineQueue.peek).mockReturnValue(item as any);
     vi.mocked(offlineQueue.pop).mockImplementation(() => {
         queueLength = 0;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return item as any;
     });
     vi.mocked(socketClient.sendRaw).mockReturnValue(true);
@@ -94,6 +99,7 @@ describe("SyncManager", () => {
   it("should not pop item if API request fails with network error", async () => {
       const visitItem = { type: "visit", payload: { shrineId: "1" }, id: "1" };
       vi.spyOn(offlineQueue, 'length', 'get').mockReturnValue(1);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.mocked(offlineQueue.peek).mockReturnValue(visitItem as any);
 
       // Fail API request

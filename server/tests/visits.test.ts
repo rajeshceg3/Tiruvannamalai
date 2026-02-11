@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 import express, { Express } from "express";
-import session from "express-session";
-import passport from "passport";
 import { registerRoutes } from "../routes";
 import { storage } from "../storage";
 import { User } from "@shared/schema";
@@ -26,7 +24,7 @@ vi.mock("../lib/geo", () => ({
   calculateDistance: vi.fn(),
 }));
 
-import { verifyLocation, calculateDistance } from "../lib/geo";
+import { calculateDistance } from "../lib/geo";
 
 describe("Shrine Visits API", () => {
   let app: Express;
@@ -61,9 +59,12 @@ describe("Shrine Visits API", () => {
       order: 1
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(storage.getShrine).mockResolvedValue(mockShrine as any);
     vi.mocked(calculateDistance).mockReturnValue(10); // 10 meters
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(storage.createVisit).mockResolvedValue({ id: 1, ...mockShrine } as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(storage.createOrUpdateJourney).mockResolvedValue({} as any);
 
     const res = await request(app)
@@ -88,8 +89,10 @@ describe("Shrine Visits API", () => {
       order: 1
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(storage.getShrine).mockResolvedValue(mockShrine as any);
     vi.mocked(calculateDistance).mockReturnValue(5000); // 5km away
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(storage.createOrUpdateJourney).mockResolvedValue({} as any);
 
     // We expect it to still create a visit, but with isVirtual=true
@@ -102,6 +105,7 @@ describe("Shrine Visits API", () => {
         isVirtual, // This is what we want to verify
         visitedAt: new Date(),
         verifiedLocation: null
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any;
     });
 

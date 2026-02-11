@@ -1,14 +1,11 @@
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { WebSocket } from 'ws';
+import { describe, it, expect, vi } from 'vitest';
 // Mock storage
 vi.mock('../storage', () => ({
   storage: {
     getUserGroup: vi.fn(),
   }
 }));
-
-import { storage } from '../storage';
 
 describe('WebSocket Security', () => {
     // Since testing WS with session integration in a unit test is complex due to

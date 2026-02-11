@@ -5,10 +5,14 @@ import { GroupMap } from "@/components/groups/group-map";
 // Mock React Leaflet components since they require DOM API not available in standard jsdom
 vi.mock("react-leaflet", () => {
   return {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     MapContainer: ({ children, className }: any) => <div data-testid="map-container" className={className}>{children}</div>,
     TileLayer: () => <div data-testid="tile-layer" />,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Marker: ({ children }: any) => <div data-testid="marker">{children}</div>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Popup: ({ children }: any) => <div data-testid="popup">{children}</div>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Circle: ({ children }: any) => <div data-testid="circle">{children}</div>,
     useMap: () => ({ setView: vi.fn(), fitBounds: vi.fn(), getZoom: () => 13 }),
     useMapEvents: () => ({}),

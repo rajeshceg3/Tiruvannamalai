@@ -82,7 +82,7 @@ export default function GroupCommand() {
   });
 
   // Real-time states
-  const [memberLocations, setMemberLocations] = useState<Record<number, any>>({});
+  const [memberLocations, setMemberLocations] = useState<Record<number, { lat: number; lng: number }>>({});
   const [memberStatus, setMemberStatus] = useState<Record<number, string>>({});
   const [memberBeacons, setMemberBeacons] = useState<Record<number, string>>({});
   const [liveSitreps, setLiveSitreps] = useState<SitRep[]>([]);
@@ -206,8 +206,7 @@ export default function GroupCommand() {
   };
 
   const createWaypointMutation = useMutation({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mutationFn: async (data: any) => {
+      mutationFn: async (data: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
           const res = await apiRequest("POST", `/api/groups/${currentGroup!.id}/waypoints`, data);
           return res.json();
       },

@@ -2,7 +2,7 @@ import { MapContainer, TileLayer, Marker, Polyline, Popup, Circle } from "react-
 import { divIcon } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MovementLog, SitRep } from "@shared/schema";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface AARMapProps {
   logs: MovementLog[];
@@ -13,7 +13,7 @@ interface AARMapProps {
 export function AARMap({ logs, sitreps, currentTime }: AARMapProps) {
   // Center map on the first log or a default
   const defaultCenter = { lat: 12.2353, lng: 79.0847 }; // Indra Lingam
-  const [mapCenter, setMapCenter] = useState(defaultCenter);
+  const [mapCenter] = useState(defaultCenter);
 
   // Filter logs up to current time for trails
   // This might be expensive for huge datasets, but for MVP it's okay.

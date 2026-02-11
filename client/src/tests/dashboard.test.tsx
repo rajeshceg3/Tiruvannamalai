@@ -41,6 +41,7 @@ vi.mock("@/lib/queryClient", () => ({
 
 // Mock UI components
 vi.mock("@/components/ui/scroll-area", () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ScrollArea: ({ children }: any) => <div data-testid="scroll-area">{children}</div>
 }));
 
@@ -66,7 +67,9 @@ describe("DashboardPage", () => {
   });
 
   it("renders loading state when data is missing", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (useQuery as any).mockReturnValue({ data: undefined, isLoading: true });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (useInfiniteQuery as any).mockReturnValue({
         data: undefined,
         fetchNextPage: vi.fn(),
@@ -80,12 +83,14 @@ describe("DashboardPage", () => {
   });
 
   it("renders dashboard content when data is loaded", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (useQuery as any).mockImplementation(({ queryKey }: any) => {
       if (queryKey[0] === "/api/shrines") return { data: [{ id: "1", name: "Shrine 1", order: 1 }] };
       if (queryKey[0] === "/api/journey") return { data: { currentShrineOrder: 0 } };
       return { data: null };
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (useInfiniteQuery as any).mockReturnValue({
         data: { pages: [[]] },
         fetchNextPage: vi.fn(),
@@ -101,11 +106,13 @@ describe("DashboardPage", () => {
   });
 
   it("renders empty journal message when no visits", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (useQuery as any).mockImplementation(({ queryKey }: any) => {
       if (queryKey[0] === "/api/shrines") return { data: [{ id: "1", name: "Shrine 1", order: 1 }] };
       return { data: null };
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (useInfiniteQuery as any).mockReturnValue({
         data: { pages: [[]] },
         fetchNextPage: vi.fn(),
@@ -122,12 +129,14 @@ describe("DashboardPage", () => {
      const shrines = [{ id: "1", name: "Shrine 1", emoji: "🕉️", direction: "North", imageUrl: "img.jpg", order: 1 }];
      const visits = [{ id: 1, shrineId: "1", visitedAt: new Date().toISOString(), notes: "Test note" }];
 
+     // eslint-disable-next-line @typescript-eslint/no-explicit-any
      (useQuery as any).mockImplementation(({ queryKey }: any) => {
       if (queryKey[0] === "/api/shrines") return { data: shrines };
       if (queryKey[0] === "/api/journey") return { data: { currentShrineOrder: 1 } };
       return { data: null };
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (useInfiniteQuery as any).mockReturnValue({
         data: { pages: [[...visits]] },
         fetchNextPage: vi.fn(),
