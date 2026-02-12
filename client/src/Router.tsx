@@ -1,6 +1,6 @@
 import { Switch, Route, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { ShellSkeleton } from "@/components/layout/shell-skeleton";
 
 // Lazy load pages
@@ -17,13 +17,14 @@ function ProtectedRoute({ component: Component, ...rest }: any) {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
-  if (isLoading) {
-    return <ShellSkeleton />;
-  }
+  useEffect(() => {
+    if (!isLoading && !user) {
+      setLocation("/auth");
+    }
+  }, [user, isLoading, setLocation]);
 
-  if (!user) {
-    setLocation("/auth");
-    return null;
+  if (isLoading || !user) {
+    return <ShellSkeleton />;
   }
 
   return (
@@ -43,12 +44,14 @@ export default function Router() {
             const { user, isLoading } = useAuth();
             const [, setLocation] = useLocation();
 
-            if (isLoading) return <ShellSkeleton />;
-
-            if (user) {
+            useEffect(() => {
+              if (!isLoading && user) {
                 setLocation("/dashboard");
-                return null;
-            }
+              }
+            }, [user, isLoading, setLocation]);
+
+            if (isLoading || user) return <ShellSkeleton />;
+
             return <HomePage />;
         }} />
 

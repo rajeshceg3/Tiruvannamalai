@@ -68,9 +68,12 @@ export function useCheckIn(shrines: Shrine[] | undefined) {
 
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           queryClient.setQueryData<{ pages: Visit[][], pageParams: any[] }>(["/api/visits"], (old) => {
-             if (!old) return { pages: [[optimisticVisit]], pageParams: [0] };
-             // Prepend to the first page
-             const newFirstPage = [optimisticVisit, ...old.pages[0]];
+             if (!old || !old.pages || old.pages.length === 0) {
+                return { pages: [[optimisticVisit]], pageParams: [0] };
+             }
+             // Prepend to the first page safely
+             const firstPage = old.pages[0] || [];
+             const newFirstPage = [optimisticVisit, ...firstPage];
              return {
                ...old,
                pages: [newFirstPage, ...old.pages.slice(1)]
