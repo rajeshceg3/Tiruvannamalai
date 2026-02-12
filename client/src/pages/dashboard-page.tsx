@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { Journey, Visit, Shrine } from "@shared/schema";
@@ -98,6 +98,10 @@ export default function DashboardPage() {
   // Flatten the pages into a single array
   const visits = visitsPageData?.pages.flat() || [];
 
+  const shrinesById = useMemo(() => {
+    return new Map(shrines?.map(s => [s.id, s]));
+  }, [shrines]);
+
   const { data: journey } = useQuery<Journey>({
     queryKey: ["/api/journey"]
   });
@@ -174,7 +178,7 @@ export default function DashboardPage() {
                 ) : (
                   <>
                     {visits.map(visit => {
-                      const shrine = shrines.find(s => s.id === visit.shrineId);
+                      const shrine = shrinesById.get(visit.shrineId);
                       if (!shrine) return null;
                       return <VisitCard key={visit.id} visit={visit} shrine={shrine} />;
                     })}
