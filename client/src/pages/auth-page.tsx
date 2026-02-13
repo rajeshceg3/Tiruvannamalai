@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Map } from "lucide-react";
+import { Map, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
@@ -54,6 +55,15 @@ export default function AuthPage() {
               <TabsContent value="login">
                 <Form {...loginForm}>
                   <form onSubmit={loginForm.handleSubmit((data) => loginMutation.mutate(data))} className="space-y-4">
+                    {loginMutation.error && (
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Login Failed</AlertTitle>
+                        <AlertDescription>
+                          {loginMutation.error.message}
+                        </AlertDescription>
+                      </Alert>
+                    )}
                     <FormField
                       control={loginForm.control}
                       name="username"
@@ -90,6 +100,15 @@ export default function AuthPage() {
               <TabsContent value="register">
                 <Form {...registerForm}>
                   <form onSubmit={registerForm.handleSubmit((data) => registerMutation.mutate(data))} className="space-y-4">
+                    {registerMutation.error && (
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Registration Failed</AlertTitle>
+                        <AlertDescription>
+                          {registerMutation.error.message}
+                        </AlertDescription>
+                      </Alert>
+                    )}
                     <FormField
                       control={registerForm.control}
                       name="username"

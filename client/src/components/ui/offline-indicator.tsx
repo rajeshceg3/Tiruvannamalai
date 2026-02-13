@@ -106,12 +106,13 @@ export function OfflineIndicator() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <div
+        <button
           className={cn(
-            "fixed bottom-4 left-4 z-50 flex cursor-pointer flex-col gap-1 rounded-md px-4 py-2 shadow-lg animate-in slide-in-from-bottom-5 transition-colors hover:opacity-90",
+            "fixed bottom-4 left-4 z-50 flex cursor-pointer flex-col gap-1 rounded-md px-4 py-2 shadow-lg animate-in slide-in-from-bottom-5 transition-colors hover:opacity-90 text-left",
             variantClass
           )}
           role="alert"
+          aria-label="Connectivity status and offline queue"
         >
           <div className="flex items-center gap-2">
               {icon}
@@ -123,15 +124,19 @@ export function OfflineIndicator() {
                   <span>{queueLength} pending upload{queueLength !== 1 ? 's' : ''}</span>
               </div>
           )}
-        </div>
+        </button>
       </PopoverTrigger>
-      {queueLength > 0 && (
-        <PopoverContent className="w-80 p-0" side="top" align="start">
-          <div className="border-b px-4 py-2 font-medium bg-muted/50">
-            Pending Operations
-          </div>
-          <div className="max-h-[300px] overflow-auto p-2 space-y-2">
-            {queueItems.map((item) => (
+      <PopoverContent className="w-80 p-0" side="top" align="start">
+        <div className="border-b px-4 py-2 font-medium bg-muted/50">
+          Pending Operations
+        </div>
+        <div className="max-h-[300px] overflow-auto p-2 space-y-2">
+          {queueLength === 0 ? (
+            <div className="p-4 text-center text-sm text-muted-foreground">
+              No pending operations.
+            </div>
+          ) : (
+            queueItems.map((item) => (
               <div key={item.id} className="flex items-center justify-between rounded-md border p-2 text-sm bg-background">
                  <div className="grid gap-1">
                     <span className="font-medium">{getReadableType(item.type)}</span>
@@ -152,32 +157,46 @@ export function OfflineIndicator() {
                    </Button>
                  </div>
               </div>
-            ))}
-          </div>
-          <div className="p-2 border-t bg-muted/20 flex gap-2">
+            ))
+          )}
+        </div>
+        <div className="p-2 border-t bg-muted/20 flex gap-2">
+          {socketStatus === "disconnected" && isOnline ? (
+             <Button
+               variant="outline"
+               size="sm"
+               className="flex-1 gap-2"
+               onClick={() => window.location.reload()}
+               aria-label="Reload page to retry connection"
+             >
+               <RefreshCw className="h-3 w-3" />
+               Retry Connection
+             </Button>
+          ) : (
             <Button
               variant="outline"
               size="sm"
               className="flex-1 gap-2"
               onClick={handleSync}
-              disabled={isSyncing}
+              disabled={isSyncing || queueLength === 0}
               aria-label="Force synchronization now"
             >
               <RefreshCw className={cn("h-3 w-3", isSyncing && "animate-spin")} />
               Sync Now
             </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              className="px-3"
-              onClick={handleClear}
-              aria-label="Clear all pending items"
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
-        </PopoverContent>
-      )}
+          )}
+          <Button
+            variant="destructive"
+            size="sm"
+            className="px-3"
+            onClick={handleClear}
+            disabled={queueLength === 0}
+            aria-label="Clear all pending items"
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      </PopoverContent>
     </Popover>
   );
 }
