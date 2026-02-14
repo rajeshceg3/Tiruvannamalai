@@ -24,7 +24,7 @@ const apiLimiter = rateLimit({
 
 const telemetryLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 10, // Limit each IP to 10 requests per minute
+  max: 60, // Limit each IP to 60 requests per minute
   standardHeaders: true,
   legacyHeaders: false,
   message: "Telemetry rate limit exceeded."
@@ -71,14 +71,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/groups/:id/aar", requireAuth, groupController.getAARData);
 
   // Telemetry Route (Public)
-  app.post("/api/telemetry", telemetryLimiter, (req, res) => {
+  const insertTelemetrySchema = z.object({
+    level: z.enum(['info', 'warn', 'error']),
+    message: z.string(),
+    context: z.record(z.string(), z.unknown()).optional(),
+    timestamp: z.string(),
+  });
+
+  app.post("/api/telemetry", telemetryLimiter, validateRequest(insertTelemetrySchema), (req, res) => {
     const { level, message, context, timestamp } = req.body;
 
-    // Sanitize level
-    const safeLevel = (['info', 'warn', 'error'].includes(level) ? level : 'info') as 'info' | 'warn' | 'error';
+    // Sanitize level (now guaranteed by schema)
     const safeContext = scrubPII(context);
 
-    logger[safeLevel](message, { ...(safeContext as object), clientTimestamp: timestamp }, "client-telemetry");
+    logger[level as 'info' | 'warn' | 'error'](message, { ...(safeContext as object), clientTimestamp: timestamp }, "client-telemetry");
     res.status(200).send({ status: 'ok' });
   });
 

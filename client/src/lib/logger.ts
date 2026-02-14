@@ -3,8 +3,7 @@ export type LogLevel = 'info' | 'warn' | 'error';
 export interface TelemetryEvent {
   level: LogLevel;
   message: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
   timestamp: string;
 }
 
@@ -29,8 +28,7 @@ class TelemetryClient {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  log(message: string, context?: Record<string, any>) {
+  log(message: string, context?: Record<string, unknown>) {
     this.send({
       level: 'info',
       message,
@@ -39,8 +37,7 @@ class TelemetryClient {
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  warn(message: string, context?: Record<string, any>) {
+  warn(message: string, context?: Record<string, unknown>) {
     this.send({
       level: 'warn',
       message,
@@ -49,8 +46,7 @@ class TelemetryClient {
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  error(message: string, context?: Record<string, any>) {
+  error(message: string, context?: Record<string, unknown>) {
     this.send({
       level: 'error',
       message,
