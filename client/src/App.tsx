@@ -7,6 +7,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { telemetry } from "@/lib/logger";
 import { useEffect } from "react";
 import { OfflineIndicator } from "@/components/ui/offline-indicator";
+import { TopLoader } from "@/components/ui/top-loader";
 import { reportWebVitals } from "@/lib/web-vitals";
 import "@/lib/sync-manager";
 
@@ -43,6 +44,7 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          <TopLoader />
           <Router />
           <Toaster />
           <OfflineIndicator />

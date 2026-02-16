@@ -12,8 +12,7 @@ const GroupCommandPage = lazy(() => import("@/pages/group-command"));
 const MissionDebriefPage = lazy(() => import("@/pages/mission-debrief"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function ProtectedRoute({ component: Component, ...rest }: any) {
+function ProtectedRoute({ component: Component, path: _path, ...rest }: { component: React.ComponentType<any>; path: string; [key: string]: any }) {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 

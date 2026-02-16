@@ -8,6 +8,7 @@ import compression from "compression";
 import { startCronJobs } from "./cron";
 
 const app = express();
+app.set("trust proxy", 1);
 app.use(compression());
 
 // Security headers
@@ -21,7 +22,12 @@ app.use(helmet({
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https://images.unsplash.com", "https://*.tile.openstreetmap.org"],
       connectSrc: ["'self'", "ws:", "wss:"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
     },
+  },
+  referrerPolicy: {
+    policy: "strict-origin-when-cross-origin",
   },
 }));
 
