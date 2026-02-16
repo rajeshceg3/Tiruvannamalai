@@ -34,6 +34,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Apply rate limiting to all API routes
   app.use("/api", apiLimiter);
 
+  // Health Check
+  app.get("/api/health", (_req, res) => {
+    res.json({
+      status: "ok",
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      version: process.env.npm_package_version || "1.0.0"
+    });
+  });
+
   // Setup Authentication
   setupAuth(app, storage);
 
