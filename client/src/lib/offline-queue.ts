@@ -1,12 +1,16 @@
 import { nanoid } from "nanoid";
+import { type InsertVisit } from "@shared/schema";
 
-export interface QueueItem {
-  id: string;
-  type: "location_update" | "beacon_signal" | "sitrep" | "visit";
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  payload: any;
-  createdAt: number;
-}
+export type LocationPayload = { lat: number; lng: number; timestamp?: number };
+export type BeaconPayload = "SOS" | "REGROUP" | "MOVING";
+export type SitrepPayload = string;
+export type VisitPayload = InsertVisit;
+
+export type QueueItem =
+  | { id: string; type: "location_update"; payload: LocationPayload; createdAt: number }
+  | { id: string; type: "beacon_signal"; payload: BeaconPayload; createdAt: number }
+  | { id: string; type: "sitrep"; payload: SitrepPayload; createdAt: number }
+  | { id: string; type: "visit"; payload: VisitPayload; createdAt: number };
 
 export class OfflineQueue {
   private queue: QueueItem[] = [];
@@ -39,17 +43,23 @@ export class OfflineQueue {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public push(type: QueueItem["type"], payload: any) {
+  public push<T extends QueueItem["type"]>(
+    type: T,
+    payload: Extract<QueueItem, { type: T }>["payload"]
+  ) {
     if (this.queue.length >= this.MAX_SIZE) {
       this.queue.shift(); // Drop oldest
     }
-    const item: QueueItem = {
+    // We need to cast here because TS has trouble inferring the union type correctly
+    // when constructing the object dynamically with generics,
+    // but the input types are strictly checked by the function signature.
+    const item = {
       id: nanoid(),
       type,
       payload,
       createdAt: Date.now(),
-    };
+    } as QueueItem;
+
     this.queue.push(item);
     this.save();
   }

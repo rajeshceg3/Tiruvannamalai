@@ -12,7 +12,7 @@ const GroupCommandPage = lazy(() => import("@/pages/group-command"));
 const MissionDebriefPage = lazy(() => import("@/pages/mission-debrief"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
-function ProtectedRoute({ component: Component, path: _path, ...rest }: { component: React.ComponentType<any>; path: string; [key: string]: any }) {
+function ProtectedRoute({ component: Component, path: _path, ...rest }: { component: React.ComponentType<object>; path: string; [key: string]: unknown }) {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
@@ -28,7 +28,7 @@ function ProtectedRoute({ component: Component, path: _path, ...rest }: { compon
 
   return (
     <Suspense fallback={<ShellSkeleton />}>
-      <Component {...rest} />
+      <Component {...(rest as object)} />
     </Suspense>
   );
 }
