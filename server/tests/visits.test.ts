@@ -124,7 +124,7 @@ describe("Shrine Visits API", () => {
       "shrine-1",
       undefined,
       true, // isVirtual should be true
-      null // verifiedLocation should be null
+      undefined // verifiedLocation should be undefined
     );
   });
 });

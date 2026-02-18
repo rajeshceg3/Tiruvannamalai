@@ -16,6 +16,7 @@ import { GroupMap, MapWaypoint } from "@/components/groups/group-map";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { MissionFailed } from "@/components/ui/mission-failed";
+import { type InsertWaypoint } from "@shared/schema";
 
 type GroupMember = {
   id: number;
@@ -98,12 +99,11 @@ export default function GroupCommand() {
   // Initialize state from persistent data when loaded
   useEffect(() => {
     if (commandData) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const locs: Record<number, any> = {};
+      const locs: Record<number, { lat: number; lng: number }> = {};
       const beacons: Record<number, string> = {};
 
       commandData.members.forEach(m => {
-        if (m.lastLocation) locs[m.userId] = m.lastLocation;
+        if (m.lastLocation) locs[m.userId] = m.lastLocation as { lat: number; lng: number };
         if (m.lastStatus) beacons[m.userId] = m.lastStatus;
         // Assume offline initially unless we get a ping, or use lastSeenAt logic?
         // For now, let's just leave online status to WS pings
@@ -206,7 +206,7 @@ export default function GroupCommand() {
   };
 
   const createWaypointMutation = useMutation({
-      mutationFn: async (data: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+      mutationFn: async (data: InsertWaypoint) => {
           const res = await apiRequest("POST", `/api/groups/${currentGroup!.id}/waypoints`, data);
           return res.json();
       },
@@ -535,8 +535,8 @@ function NoGroupState() {
       queryClient.invalidateQueries({ queryKey: ["/api/groups/current"] });
       toast({ title: "Squad Formed", description: "You have established a new pilgrimage group." });
     },
-    onError: (e) => {
-        toast({ title: "Error", description: (e as Error).message, variant: "destructive" });
+    onError: (e: Error) => {
+        toast({ title: "Error", description: e.message, variant: "destructive" });
     }
   });
 
@@ -549,8 +549,7 @@ function NoGroupState() {
       queryClient.invalidateQueries({ queryKey: ["/api/groups/current"] });
       toast({ title: "Joined Squad", description: "You have successfully linked with the group." });
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onError: (e: any) => {
+    onError: (e: Error) => {
         const message = e.message || "Failed to join group";
         toast({ title: "Connection Failed", description: message, variant: "destructive" });
     }

@@ -1,46 +1,60 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
-import { Server } from "http";
+import { Server, IncomingMessage } from "http";
 import { sessionParser } from "./auth";
 import { wsMessageSchema } from "@shared/schema";
 import { locationService } from "./services/location-service";
 import { logger } from "./lib/logger";
+import { Request, Response } from "express";
+
+interface UserSocket extends WebSocket {
+  userId: number;
+}
+
+// Extend IncomingMessage to support session
+interface SessionRequest extends IncomingMessage {
+  session?: {
+    passport?: {
+      user?: number;
+    };
+  };
+}
 
 export function setupWebSocket(httpServer: Server) {
   const wss = new WebSocketServer({ noServer: true });
 
   httpServer.on("upgrade", (request, socket, head) => {
     if (request.url === "/ws") {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      sessionParser(request as any, {} as any, () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const req = request as any;
-        if (!req.session || !req.session.passport || !req.session.passport.user) {
+      // Use the session parser to attach session to the request
+      // We cast to Request/Response to satisfy express-session types, even though it's an upgrade request
+      sessionParser(request as Request, {} as Response, () => {
+        const req = request as SessionRequest;
+
+        if (!req.session?.passport?.user) {
           socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
           socket.destroy();
           return;
         }
 
         wss.handleUpgrade(request, socket, head, (ws) => {
-          // Attach user ID to the socket
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (ws as any).userId = req.session.passport.user;
-          wss.emit("connection", ws, request);
+          const userSocket = ws as UserSocket;
+          userSocket.userId = req.session!.passport!.user!;
+          wss.emit("connection", userSocket, request);
         });
       });
     }
   });
 
-  // Map to store clients: groupId -> Set<WebSocket>
-  const groupClients = new Map<number, Set<WebSocket>>();
+  // Map to store clients: groupId -> Set<UserSocket>
+  const groupClients = new Map<number, Set<UserSocket>>();
 
-  wss.on("connection", (ws, _req) => {
+  wss.on("connection", (ws: WebSocket, _req) => {
+    // Cast to UserSocket safely as we ensured it in handleUpgrade
+    const userSocket = ws as UserSocket;
+    const currentUserId = userSocket.userId;
     let currentGroupId: number | null = null;
-    // We trust this because we set it in the upgrade handler
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const currentUserId = (ws as any).userId as number;
 
-    ws.on("message", async (data) => {
+    userSocket.on("message", async (data) => {
       try {
         let raw;
         try {
@@ -70,7 +84,7 @@ export function setupWebSocket(httpServer: Server) {
             if (!groupClients.has(groupId)) {
               groupClients.set(groupId, new Set());
             }
-            groupClients.get(groupId)!.add(ws);
+            groupClients.get(groupId)!.add(userSocket);
 
             // Broadcast join
             broadcastToGroup(groupId, {
@@ -80,7 +94,7 @@ export function setupWebSocket(httpServer: Server) {
             });
           } else {
              // Invalid attempt, close connection or ignore
-             ws.close();
+             userSocket.close();
           }
         } else if (message.type === "location_update" && currentGroupId) {
           const { sitrep } = await locationService.handleLocationUpdate(
@@ -94,7 +108,7 @@ export function setupWebSocket(httpServer: Server) {
             type: "location_update",
             userId: currentUserId, // Use authenticated ID
             location: message.location // { lat, lng, timestamp }
-          }, ws); // Exclude sender
+          }, userSocket); // Exclude sender
 
           // Broadcast SitRep if generated (e.g., entered waypoint)
           if (sitrep) {
@@ -138,9 +152,9 @@ export function setupWebSocket(httpServer: Server) {
       }
     });
 
-    ws.on("close", () => {
+    userSocket.on("close", () => {
       if (currentGroupId && groupClients.has(currentGroupId)) {
-        groupClients.get(currentGroupId)!.delete(ws);
+        groupClients.get(currentGroupId)!.delete(userSocket);
         if (groupClients.get(currentGroupId)!.size === 0) {
           groupClients.delete(currentGroupId);
         } else {
@@ -154,8 +168,7 @@ export function setupWebSocket(httpServer: Server) {
     });
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function broadcastToGroup(groupId: number, message: any, excludeWs?: WebSocket) {
+  function broadcastToGroup(groupId: number, message: unknown, excludeWs?: UserSocket) {
     if (groupClients.has(groupId)) {
       groupClients.get(groupId)!.forEach(client => {
         if (client !== excludeWs && client.readyState === WebSocket.OPEN) {

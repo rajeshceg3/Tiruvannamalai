@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { storage } from "../storage";
 import { calculateDistance } from "../lib/geo";
-import { LOCATION_VERIFICATION_THRESHOLD } from "@shared/schema";
+import { LOCATION_VERIFICATION_THRESHOLD, type VerifiedLocation } from "@shared/schema";
 
 const VERIFICATION_THRESHOLD_METERS = LOCATION_VERIFICATION_THRESHOLD;
 const MAX_ACCURACY_THRESHOLD_METERS = 100;
@@ -29,7 +29,7 @@ export async function createVisit(req: Request, res: Response, next: NextFunctio
     }
 
     let isVirtual = true;
-    let verifiedLocation = null;
+    let verifiedLocation: VerifiedLocation | undefined;
 
     // Verification Logic
     if (latitude !== undefined && longitude !== undefined) {
@@ -42,11 +42,10 @@ export async function createVisit(req: Request, res: Response, next: NextFunctio
       if (isAccurateEnough && isInRange) {
         isVirtual = false;
         verifiedLocation = {
-          latitude,
-          longitude,
+          lat: latitude,
+          lng: longitude,
           accuracy,
-          distance,
-          timestamp: new Date().toISOString()
+          timestamp: Date.now()
         };
       }
     }

@@ -5,7 +5,7 @@ import createMemoryStore from "memorystore";
 import connectPgSimple from "connect-pg-simple";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import { Express, RequestHandler } from "express";
 import { hashPassword, comparePasswords } from "./hash";
 import rateLimit from "express-rate-limit";
 import { validateRequest } from "./middleware/validation";
@@ -25,8 +25,7 @@ const authLimiter = rateLimit({
 });
 
 // Export the session parser so it can be used by WebSocket upgrades
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export let sessionParser: any;
+export let sessionParser: RequestHandler;
 
 export function setupAuth(app: Express, storage: IStorage) {
   const sessionSecret = process.env.SESSION_SECRET;
