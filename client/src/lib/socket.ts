@@ -22,13 +22,13 @@ export type ConnectionStatus = "connecting" | "connected" | "disconnected";
 
 type Listener<T> = (data: T) => void;
 
+type EventListeners = {
+  [K in keyof SocketEventMap]?: Set<Listener<SocketEventMap[K]>>;
+};
+
 export class SocketClient {
   private ws: WebSocket | null = null;
-  // Use a map of sets of typed functions.
-  // We use 'any' for the Set content internally to allow storing different callback types in the same Map,
-  // but the public API enforces strict typing.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private listeners: Map<string, Set<Listener<any>>> = new Map();
+  private listeners: EventListeners = {};
   private statusListeners: Set<Listener<ConnectionStatus>> = new Set();
 
   private reconnectTimeout: NodeJS.Timeout | null = null;
@@ -79,7 +79,10 @@ export class SocketClient {
     this.ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        this.emit(data.type, data);
+        // We need to type guard 'data.type' to ensure it's a valid key
+        if (this.isValidEventType(data.type)) {
+             this.emit(data.type, data);
+        }
       } catch (e) {
         console.error("Socket message parse error:", e);
         telemetry.error("Socket message parse error", { error: String(e) });
@@ -112,13 +115,16 @@ export class SocketClient {
     };
   }
 
+  private isValidEventType(type: string): type is keyof SocketEventMap {
+      return ["location_update", "beacon_signal", "sitrep", "member_update"].includes(type);
+  }
+
   private updateStatus(newStatus: ConnectionStatus) {
       this.status = newStatus;
       this.statusListeners.forEach(cb => cb(newStatus));
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public sendRaw(message: any): boolean {
+  public sendRaw(message: unknown): boolean {
     if (this.ws?.readyState === WebSocket.OPEN) {
       try {
         this.ws.send(JSON.stringify(message));
@@ -164,14 +170,13 @@ export class SocketClient {
   }
 
   public on<K extends keyof SocketEventMap>(type: K, callback: Listener<SocketEventMap[K]>) {
-    if (!this.listeners.has(type)) {
-      this.listeners.set(type, new Set());
+    // Cast to access the underlying set without strict generic variance issues
+    const listeners = this.listeners as Record<string, Set<unknown>>;
+    if (!listeners[type]) {
+      listeners[type] = new Set();
     }
-    // We cast to Listener<any> to store it, but strict type is enforced at the method signature
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.listeners.get(type)!.add(callback as Listener<any>);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return () => this.listeners.get(type)!.delete(callback as Listener<any>);
+    listeners[type].add(callback);
+    return () => { listeners[type]?.delete(callback); };
   }
 
   public onStatusChange(callback: Listener<ConnectionStatus>) {
@@ -182,7 +187,7 @@ export class SocketClient {
   }
 
   private emit<K extends keyof SocketEventMap>(type: K, data: SocketEventMap[K]) {
-    this.listeners.get(type)?.forEach(cb => cb(data));
+    this.listeners[type]?.forEach(cb => cb(data));
   }
 }
 

@@ -14,16 +14,29 @@ export class AppError extends Error {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
+export const errorHandler = (err: unknown, req: Request, res: Response, next: NextFunction) => {
   // If headers are already sent, delegate to default Express error handler
   if (res.headersSent) {
     return next(err);
   }
 
   // Determine status code
-  const statusCode = err.statusCode || 500;
-  const message = err.message || "Internal Server Error";
+  let statusCode = 500;
+  let message = "Internal Server Error";
+  let stack: string | undefined = undefined;
+
+  if (err instanceof AppError) {
+      statusCode = err.statusCode;
+      message = err.message;
+  } else if (err instanceof Error) {
+      // If it's a generic error but has a statusCode property (e.g. from some library)
+      // we can try to use it, but safely.
+      if ('statusCode' in err && typeof (err as { statusCode: unknown }).statusCode === 'number') {
+           statusCode = (err as { statusCode: number }).statusCode;
+      }
+      message = err.message;
+      stack = err.stack;
+  }
 
   // Log error (consider using a structured logger in production)
   // We mask the stack trace in production for security
@@ -43,6 +56,6 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
 
   res.status(statusCode).json({
     message: isProduction && statusCode === 500 ? "Internal Server Error" : message,
-    ...(isProduction ? {} : { stack: err.stack }),
+    ...(isProduction ? {} : { stack }),
   });
 };
