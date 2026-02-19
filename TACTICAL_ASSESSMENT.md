@@ -23,46 +23,55 @@ The repository demonstrates a robust architectural foundation with essential tac
 - **CSP (Content Security Policy):** `helmet` is active but allows `'unsafe-inline'` for styles.
   - *Risk:* Moderate (XSS vector via CSS injection).
   - *Mitigation:* Accepted for current mission phase due to `TopLoader` and potentially other UI library dependencies. Future hardening required.
-- **CORS:** Implicitly handled by same-origin architecture. No explicit configuration needed unless separating frontend/backend domains.
+- **Type Safety Bypass:** `server/websocket.ts` uses `any` casts for critical session data, potentially allowing malformed data to crash the server or bypass checks if underlying libraries change.
 
 ## 3. Reliability & Code Quality (DEFCON 2 - CRITICAL)
 
 ### Critical Failures
-- **Type Safety Violations:** The codebase is riddled with `// eslint-disable-next-line @typescript-eslint/no-explicit-any`. This defeats the purpose of TypeScript and is a direct threat to mission stability.
-  - **Locations:**
-    - `client/src/Router.tsx`: `ProtectedRoute` props.
-    - `client/src/lib/socket.ts`: Event listeners and raw message sending.
-    - `client/src/lib/offline-queue.ts`: Queue item payloads.
-    - `server/lib/logger.ts`: Context objects.
-    - `server/middleware/error.ts`: Error handling logic.
+- **Type Safety Violations:** The codebase contains multiple instances of `any` that must be eliminated to ensure stability.
+  - **`server/websocket.ts`:**
+    - `sessionParser(request as any...)`: Unsafe session parsing.
+    - `(ws as any).userId`: Unsafe property access on WebSocket objects.
+  - **`server/auth.ts`:**
+    - `export let sessionParser: any`: Global export of untyped middleware.
+  - **`server/storage.ts`:**
+    - `verifiedLocation?: any`: Unsafe storage method signature.
+  - **`client/src/pages/group-command.tsx`:**
+    - `const locs: Record<number, any>`: Loss of type safety for location data.
+    - `mutationFn: async (data: any)`: Untyped mutation payloads.
+    - `onError: (e: any)`: Generic error handling.
 
 ### Recommendations (Immediate Action)
-1.  **Enforce Strictness:** Update ESLint config to treat `no-explicit-any` as an ERROR.
-2.  **Refactor Core Libs:** Rewrite `SocketClient` and `OfflineQueue` to use Discriminated Unions and Generics.
+1.  **Enforce Strictness:** Eliminate `any` in identified hot-spots.
+2.  **Refactor Core Libs:** Introduce `UserSocket` type and `VerifiedLocation` interface.
+3.  **Client Hardening:** Use Zod schemas for all client-side mutations.
 
 ## 4. User Experience (UX) (DEFCON 4)
 
 ### Status
 - **Feedback:** `TopLoader` provides visual continuity during route transitions. `Toaster` handles notifications.
 - **Error Recovery:** `ErrorBoundary` allows users to report issues directly to telemetry.
-- **Offline:** `OfflineIndicator` gives clear status updates.
+- **Offline:** `OfflineIndicator` gives clear status updates. `MissionFailed` component handles query errors gracefully.
 
 ### Recommendations
 - Maintain current high standard. Ensure `TopLoader` is performant and doesn't block interaction.
+- Ensure all toast notifications provide actionable feedback.
 
 ## 5. Performance (DEFCON 5)
 
 - **Bundling:** Vite production build is optimized.
 - **Lazy Loading:** Route-level code splitting is active.
 - **Caching:** React Query handles server state caching effectively.
+- **Compression:** Gzip/Brotli enabled via `compression` middleware.
 
 ## 6. Execution Roadmap
 
-1.  **Phase 1: Lockdown:** Switch ESLint to Strict Mode.
+1.  **Phase 1: Lockdown:** Switch ESLint to Strict Mode (already configured).
 2.  **Phase 2: Refactor:** SYSTEMATICALLY replace `any` with:
-    - `unknown` (where structure is truly unknown).
-    - Discriminated Unions (for Queues and Sockets).
-    - Generics (for Hooks).
+    - `UserSocket` interface for WebSocket connections.
+    - `VerifiedLocation` interface for storage.
+    - `RequestHandler` for session middleware.
+    - Strict Zod types for client mutations.
 3.  **Phase 3: Verify:** Full regression testing suite run.
 
 **Signed,**

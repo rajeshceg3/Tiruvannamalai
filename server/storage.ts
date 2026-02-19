@@ -19,6 +19,7 @@ import {
   waypoints,
   type MovementLog,
   movementLogs,
+  type VerifiedLocation,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gt, asc } from "drizzle-orm";
@@ -35,8 +36,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
 
   // Visits
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  createVisit(userId: number, shrineId: string, notes?: string, isVirtual?: boolean, verifiedLocation?: any): Promise<Visit>;
+  createVisit(userId: number, shrineId: string, notes?: string, isVirtual?: boolean, verifiedLocation?: VerifiedLocation): Promise<Visit>;
   getVisits(userId: number, limit?: number, offset?: number): Promise<Visit[]>;
   updateVisitNote(visitId: number, notes: string): Promise<Visit | undefined>;
 
@@ -132,8 +132,7 @@ export class MemStorage implements IStorage {
   }
 
   // Visits
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async createVisit(userId: number, shrineId: string, notes?: string, isVirtual: boolean = true, verifiedLocation?: any): Promise<Visit> {
+  async createVisit(userId: number, shrineId: string, notes?: string, isVirtual: boolean = true, verifiedLocation?: VerifiedLocation): Promise<Visit> {
     // Check if recently visited (e.g., within last 10 minutes)
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
     const existingRecentVisit = Array.from(this.visits.values()).find(
@@ -371,8 +370,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async createVisit(userId: number, shrineId: string, notes?: string, isVirtual: boolean = true, verifiedLocation?: any): Promise<Visit> {
+  async createVisit(userId: number, shrineId: string, notes?: string, isVirtual: boolean = true, verifiedLocation?: VerifiedLocation): Promise<Visit> {
     // Check if recently visited (e.g., within last 10 minutes)
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
     const [existingRecent] = await db.select().from(visits).where(
