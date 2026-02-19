@@ -12,46 +12,11 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileSidebar } from "@/components/layout/mobile-sidebar";
-import { GroupMap, MapWaypoint } from "@/components/groups/group-map";
+import { GroupMap } from "@/components/groups/group-map";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { MissionFailed } from "@/components/ui/mission-failed";
-import { type InsertWaypoint } from "@shared/schema";
-
-type GroupMember = {
-  id: number;
-  userId: number;
-  user: {
-    username: string;
-  };
-  joinedAt: string;
-  lastLocation?: { lat: number; lng: number };
-  lastStatus?: string;
-  lastSeenAt?: string;
-  lastWaypointId?: number;
-};
-
-type Group = {
-  id: number;
-  name: string;
-  code: string;
-  creatorId: number;
-};
-
-type SitRep = {
-  id: number;
-  userId: number;
-  message: string;
-  type: string;
-  createdAt: string;
-};
-
-type CommandCenterData = {
-  group: Group;
-  members: GroupMember[];
-  sitreps: SitRep[];
-  waypoints: MapWaypoint[];
-};
+import { type InsertWaypoint, type CommandCenterResponse, type Group } from "@shared/schema";
 
 export default function GroupCommand() {
   const { user } = useAuth();
@@ -77,7 +42,7 @@ export default function GroupCommand() {
     isError: isCommandError,
     error: commandError,
     refetch: refetchCommand
-  } = useQuery<CommandCenterData>({
+  } = useQuery<CommandCenterResponse>({
     queryKey: [`/api/groups/${currentGroup?.id}/command-center`],
     enabled: !!currentGroup?.id,
   });
@@ -86,7 +51,7 @@ export default function GroupCommand() {
   const [memberLocations, setMemberLocations] = useState<Record<number, { lat: number; lng: number }>>({});
   const [memberStatus, setMemberStatus] = useState<Record<number, string>>({});
   const [memberBeacons, setMemberBeacons] = useState<Record<number, string>>({});
-  const [liveSitreps, setLiveSitreps] = useState<SitRep[]>([]);
+  const [liveSitreps, setLiveSitreps] = useState<CommandCenterResponse['sitreps']>([]);
   const [personalStatus, setPersonalStatus] = useState<"ok" | "sos" | "regroup">("ok");
   const [sitrepInput, setSitrepInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -103,7 +68,7 @@ export default function GroupCommand() {
       const beacons: Record<number, string> = {};
 
       commandData.members.forEach(m => {
-        if (m.lastLocation) locs[m.userId] = m.lastLocation as { lat: number; lng: number };
+        if (m.lastLocation) locs[m.userId] = m.lastLocation;
         if (m.lastStatus) beacons[m.userId] = m.lastStatus;
         // Assume offline initially unless we get a ping, or use lastSeenAt logic?
         // For now, let's just leave online status to WS pings
@@ -111,7 +76,8 @@ export default function GroupCommand() {
 
       setMemberLocations(prev => ({ ...locs, ...prev }));
       setMemberBeacons(prev => ({ ...beacons, ...prev }));
-      setLiveSitreps(commandData.sitreps.reverse()); // Reverse to show oldest first in list, or handle sorting
+      // We need to reverse safely as prop might be readonly in strict mode
+      setLiveSitreps([...commandData.sitreps].reverse());
     }
   }, [commandData]);
 
@@ -145,7 +111,14 @@ export default function GroupCommand() {
       });
 
       const unsubSitrep = socketClient.on("sitrep", (data) => {
-          setLiveSitreps(prev => [...prev, data.sitrep]);
+          // data.sitrep needs to match the SitRep structure in CommandCenterResponse['sitreps']
+          // The socket data might come as raw JSON object.
+          // We can cast it here or ensure backend sends compatible data.
+          // Assuming backend sends a valid SitRep object.
+          // We need to ensure dates are strings or dates as per our schema.
+          // Websocket JSON.parse produces strings for dates.
+          const sitrep = data.sitrep as CommandCenterResponse['sitreps'][0];
+          setLiveSitreps(prev => [...prev, sitrep]);
           // Auto-scroll
           if (scrollRef.current) {
               setTimeout(() => {
@@ -270,7 +243,7 @@ export default function GroupCommand() {
   const mapMembers = members.map(m => ({
       userId: m.userId,
       username: m.user.username,
-      location: memberLocations[m.userId] || m.lastLocation,
+      location: memberLocations[m.userId] || (m.lastLocation ? { lat: m.lastLocation.lat, lng: m.lastLocation.lng } : undefined),
       status: memberBeacons[m.userId] || m.lastStatus || 'OK',
       isSelf: m.userId === user?.id
   }));

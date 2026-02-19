@@ -326,3 +326,51 @@ export const wsMessageSchema = z.discriminatedUnion("type", [
 ]);
 
 export type WsMessage = z.infer<typeof wsMessageSchema>;
+
+// --- API Response Schemas ---
+
+export const groupMemberResponseSchema = z.object({
+  id: z.number(),
+  groupId: z.number(),
+  userId: z.number(),
+  joinedAt: z.string().or(z.date()), // API might return string ISO date
+  lastLocation: verifiedLocationSchema.optional().nullable(),
+  lastSeenAt: z.string().or(z.date()).nullable(),
+  lastStatus: z.string().nullable(),
+  lastWaypointId: z.number().nullable(),
+  user: z.object({
+    username: z.string()
+  })
+});
+
+export const commandCenterResponseSchema = z.object({
+  group: z.object({
+    id: z.number(),
+    name: z.string(),
+    code: z.string(),
+    creatorId: z.number(),
+    createdAt: z.string().or(z.date())
+  }),
+  members: z.array(groupMemberResponseSchema),
+  sitreps: z.array(z.object({
+    id: z.number(),
+    groupId: z.number(),
+    userId: z.number(),
+    message: z.string(),
+    type: z.string(),
+    createdAt: z.string().or(z.date())
+  })),
+  waypoints: z.array(z.object({
+    id: z.number(),
+    groupId: z.number(),
+    name: z.string(),
+    latitude: z.number(),
+    longitude: z.number(),
+    radius: z.number(),
+    type: z.string(),
+    createdAt: z.string().or(z.date())
+  }))
+});
+
+export type GroupMemberResponse = z.infer<typeof groupMemberResponseSchema>;
+export type CommandCenterResponse = z.infer<typeof commandCenterResponseSchema>;

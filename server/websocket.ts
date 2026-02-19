@@ -26,8 +26,9 @@ export function setupWebSocket(httpServer: Server) {
   httpServer.on("upgrade", (request, socket, head) => {
     if (request.url === "/ws") {
       // Use the session parser to attach session to the request
-      // We cast to Request/Response to satisfy express-session types, even though it's an upgrade request
-      sessionParser(request as Request, {} as Response, () => {
+      // We cast to Request/Response to satisfy express-session types, even though it's an upgrade request.
+      // This is safe because express-session primarily uses properties available on IncomingMessage.
+      sessionParser(request as unknown as Request, {} as unknown as Response, () => {
         const req = request as SessionRequest;
 
         if (!req.session?.passport?.user) {
