@@ -327,6 +327,58 @@ export const wsMessageSchema = z.discriminatedUnion("type", [
 
 export type WsMessage = z.infer<typeof wsMessageSchema>;
 
+// --- Server to Client Messages ---
+
+export const scLocationUpdateSchema = z.object({
+  type: z.literal("location_update"),
+  userId: z.number(),
+  location: z.object({
+    lat: z.number(),
+    lng: z.number(),
+    timestamp: z.number().optional(),
+  }),
+});
+
+export const scBeaconSignalSchema = z.object({
+  type: z.literal("beacon_signal"),
+  userId: z.number(),
+  signal: z.enum(["SOS", "REGROUP", "MOVING"]),
+});
+
+export const scSitRepSchema = z.object({
+  type: z.literal("sitrep"),
+  sitrep: z.object({
+      id: z.number(),
+      groupId: z.number(),
+      userId: z.number(),
+      message: z.string(),
+      type: z.string(),
+      createdAt: z.string().or(z.date()),
+  })
+});
+
+export const scMemberUpdateSchema = z.object({
+  type: z.literal("member_update"),
+  userId: z.number(),
+  status: z.string(),
+});
+
+export const scStatusUpdateSchema = z.object({
+  type: z.literal("status_update"),
+  userId: z.number(),
+  status: z.string(),
+});
+
+export const serverToClientMessageSchema = z.discriminatedUnion("type", [
+  scLocationUpdateSchema,
+  scBeaconSignalSchema,
+  scSitRepSchema,
+  scMemberUpdateSchema,
+  scStatusUpdateSchema,
+]);
+
+export type ServerToClientMessage = z.infer<typeof serverToClientMessageSchema>;
+
 // --- API Response Schemas ---
 
 export const groupMemberResponseSchema = z.object({
