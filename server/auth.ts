@@ -24,8 +24,15 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Export the session parser so it can be used by WebSocket upgrades
-export let sessionParser: RequestHandler;
+// Export a getter for the session parser so it can be used by WebSocket upgrades
+let sessionParser: RequestHandler;
+
+export function getSessionMiddleware() {
+  if (!sessionParser) {
+    throw new Error("Session middleware not initialized. Call setupAuth first.");
+  }
+  return sessionParser;
+}
 
 export function setupAuth(app: Express, storage: IStorage) {
   const sessionSecret = process.env.SESSION_SECRET;
