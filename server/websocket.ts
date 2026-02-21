@@ -1,18 +1,19 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { Server, IncomingMessage } from "http";
-import { sessionParser } from "./auth";
+import { getSessionMiddleware } from "./auth";
 import { wsMessageSchema, type ServerToClientMessage } from "@shared/schema";
 import { locationService } from "./services/location-service";
 import { logger } from "./lib/logger";
 import { Request, Response } from "express";
 
-interface UserSocket extends WebSocket {
+// UserSocket must be exported or used consistently
+export interface UserSocket extends WebSocket {
   userId: number;
 }
 
 // Extend IncomingMessage to support session
-interface SessionRequest extends IncomingMessage {
+export interface SessionRequest extends IncomingMessage {
   session?: {
     passport?: {
       user?: number;
@@ -25,10 +26,12 @@ export function setupWebSocket(httpServer: Server) {
 
   httpServer.on("upgrade", (request, socket, head) => {
     if (request.url === "/ws") {
-      // Use the session parser to attach session to the request
-      // We cast to Request/Response to satisfy express-session types, even though it's an upgrade request.
-      // This is safe because express-session primarily uses properties available on IncomingMessage.
-      sessionParser(request as unknown as Request, {} as unknown as Response, () => {
+      const sessionMiddleware = getSessionMiddleware();
+
+      // Use the session middleware to attach session to the request
+      // We cast to Request/Response to satisfy express-session types (which expects Express.Request).
+      // IncomingMessage is compatible enough for session parsing purposes here.
+      sessionMiddleware(request as unknown as Request, {} as unknown as Response, () => {
         const req = request as SessionRequest;
 
         if (!req.session?.passport?.user) {

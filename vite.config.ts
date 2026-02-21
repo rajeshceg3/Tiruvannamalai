@@ -10,7 +10,7 @@ export default defineConfig({
     runtimeErrorOverlay(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      includeAssets: ['icon.svg'],
       manifest: {
         name: 'Sacred Steps',
         short_name: 'Sacred Steps',
@@ -21,19 +21,14 @@ export default defineConfig({
         orientation: 'portrait',
         icons: [
           {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png'
+            src: 'icon.svg',
+            sizes: '192x192 512x512',
+            type: 'image/svg+xml'
           },
           {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
+            src: 'icon.svg',
+            sizes: '192x192 512x512',
+            type: 'image/svg+xml',
             purpose: 'any maskable'
           }
         ]

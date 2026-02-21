@@ -7,9 +7,9 @@
 
 ## 1. Executive Summary
 
-The repository demonstrates a robust architectural foundation with essential tactical features (Offline Sync, Geolocation, WebSocket Comms). However, a critical vulnerability exists in the form of pervasive type-safety bypasses (`any`) throughout core infrastructure. While security configuration is largely sound, code reliability is compromised by these loose types, which could mask runtime errors in a production environment.
+The repository demonstrates a robust architectural foundation with essential tactical features (Offline Sync, Geolocation, WebSocket Comms). However, critical vulnerabilities exist in type safety and PWA asset integrity. While the security configuration is largely sound, the reliability of the codebase is compromised by loose types (`any` casts) and missing production assets.
 
-**Mission Status:** GO for Refactoring. NO-GO for Production until Type Safety is secured.
+**Mission Status:** GO for Refactoring. NO-GO for Production until Type Safety and Assets are secured.
 
 ## 2. Security Assessment (DEFCON 3)
 
@@ -24,6 +24,7 @@ The repository demonstrates a robust architectural foundation with essential tac
   - *Risk:* Moderate (XSS vector via CSS injection).
   - *Mitigation:* Accepted for current mission phase due to `TopLoader` and potentially other UI library dependencies. Future hardening required.
 - **Type Safety Bypass:** `server/websocket.ts` uses `any` casts for critical session data, potentially allowing malformed data to crash the server or bypass checks if underlying libraries change.
+- **Missing PWA Assets:** The PWA manifest references PNG icons (`pwa-192x192.png`, etc.) that are missing from the repository, causing 404 errors and broken install capability.
 
 ## 3. Reliability & Code Quality (DEFCON 2 - CRITICAL)
 
@@ -33,18 +34,14 @@ The repository demonstrates a robust architectural foundation with essential tac
     - `sessionParser(request as any...)`: Unsafe session parsing.
     - `(ws as any).userId`: Unsafe property access on WebSocket objects.
   - **`server/auth.ts`:**
-    - `export let sessionParser: any`: Global export of untyped middleware.
+    - `export let sessionParser: any`: Global export of untyped middleware, violating encapsulation principles.
   - **`server/storage.ts`:**
     - `verifiedLocation?: any`: Unsafe storage method signature.
-  - **`client/src/pages/group-command.tsx`:**
-    - `const locs: Record<number, any>`: Loss of type safety for location data.
-    - `mutationFn: async (data: any)`: Untyped mutation payloads.
-    - `onError: (e: any)`: Generic error handling.
 
 ### Recommendations (Immediate Action)
 1.  **Enforce Strictness:** Eliminate `any` in identified hot-spots.
 2.  **Refactor Core Libs:** Introduce `UserSocket` type and `VerifiedLocation` interface.
-3.  **Client Hardening:** Use Zod schemas for all client-side mutations.
+3.  **Encapsulate Auth:** Export a getter for the session middleware instead of exposing a mutable variable.
 
 ## 4. User Experience (UX) (DEFCON 4)
 
@@ -54,8 +51,8 @@ The repository demonstrates a robust architectural foundation with essential tac
 - **Offline:** `OfflineIndicator` gives clear status updates. `MissionFailed` component handles query errors gracefully.
 
 ### Recommendations
-- Maintain current high standard. Ensure `TopLoader` is performant and doesn't block interaction.
-- Ensure all toast notifications provide actionable feedback.
+- **PWA Integrity:** Fix missing icon assets immediately to ensure installability and offline functionality.
+- **Loading States:** Verify skeletons are used where appropriate (future enhancement).
 
 ## 5. Performance (DEFCON 5)
 
