@@ -2,6 +2,7 @@ import { offlineQueue } from "./offline-queue";
 import { socketClient } from "./socket";
 import { apiRequest, queryClient } from "./queryClient";
 import { telemetry } from "./logger";
+import { type WsMessage } from "@shared/schema";
 
 export class SyncManager {
   private isProcessing = false;
@@ -76,8 +77,7 @@ export class SyncManager {
                break;
            }
 
-           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-           let message: any;
+           let message: WsMessage | null = null;
            switch (item.type) {
              case "location_update":
                message = { type: "location_update", location: item.payload };

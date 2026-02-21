@@ -1,21 +1,10 @@
 import { useState, useEffect } from "react";
 import { telemetry } from "@/lib/logger";
 import { offlineQueue } from "./offline-queue";
-
-export type SocketSitRep = {
-  id: number;
-  groupId: number;
-  userId: number;
-  message: string;
-  type: string;
-  createdAt: string;
-};
+import { type WsMessage, type ServerToClientMessage, serverToClientMessageSchema } from "@shared/schema";
 
 export type SocketEventMap = {
-  "location_update": { userId: number; location: { lat: number; lng: number } };
-  "beacon_signal": { userId: number; signal: "SOS" | "REGROUP" | "MOVING" };
-  "sitrep": { sitrep: SocketSitRep };
-  "member_update": { userId: number; status: string; type: "member_update" };
+  [K in ServerToClientMessage["type"]]: Extract<ServerToClientMessage, { type: K }>;
 };
 
 export type ConnectionStatus = "connecting" | "connected" | "disconnected";
@@ -78,10 +67,22 @@ export class SocketClient {
 
     this.ws.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
-        // We need to type guard 'data.type' to ensure it's a valid key
-        if (this.isValidEventType(data.type)) {
-             this.emit(data.type, data);
+        const raw = JSON.parse(event.data);
+        const validation = serverToClientMessageSchema.safeParse(raw);
+
+        if (validation.success) {
+            const data = validation.data;
+            // Explicit switch to help TypeScript narrow the discriminated union for emit
+            switch (data.type) {
+                case "location_update": this.emit("location_update", data); break;
+                case "beacon_signal": this.emit("beacon_signal", data); break;
+                case "sitrep": this.emit("sitrep", data); break;
+                case "member_update": this.emit("member_update", data); break;
+                case "status_update": this.emit("status_update", data); break;
+            }
+        } else {
+             // Silently ignore or log warning for unknown messages to avoid crashing
+             // console.warn("Invalid socket message:", validation.error);
         }
       } catch (e) {
         console.error("Socket message parse error:", e);
@@ -115,16 +116,12 @@ export class SocketClient {
     };
   }
 
-  private isValidEventType(type: string): type is keyof SocketEventMap {
-      return ["location_update", "beacon_signal", "sitrep", "member_update"].includes(type);
-  }
-
   private updateStatus(newStatus: ConnectionStatus) {
       this.status = newStatus;
       this.statusListeners.forEach(cb => cb(newStatus));
   }
 
-  public sendRaw(message: unknown): boolean {
+  public sendRaw(message: WsMessage): boolean {
     if (this.ws?.readyState === WebSocket.OPEN) {
       try {
         this.ws.send(JSON.stringify(message));
@@ -141,13 +138,15 @@ export class SocketClient {
     this.userId = userId;
     this.groupId = groupId;
     if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ type: "join_group", userId, groupId }));
+      const msg: WsMessage = { type: "join_group", userId, groupId };
+      this.ws.send(JSON.stringify(msg));
     }
   }
 
   public sendLocation(location: { lat: number; lng: number; timestamp: number }) {
     if (this.ws?.readyState === WebSocket.OPEN && navigator.onLine) {
-      this.ws.send(JSON.stringify({ type: "location_update", location }));
+      const msg: WsMessage = { type: "location_update", location };
+      this.ws.send(JSON.stringify(msg));
     } else {
       offlineQueue.push("location_update", location);
     }
@@ -155,7 +154,8 @@ export class SocketClient {
 
   public sendBeacon(signal: "SOS" | "REGROUP" | "MOVING") {
     if (this.ws?.readyState === WebSocket.OPEN && navigator.onLine) {
-      this.ws.send(JSON.stringify({ type: "beacon_signal", signal }));
+      const msg: WsMessage = { type: "beacon_signal", signal };
+      this.ws.send(JSON.stringify(msg));
     } else {
       offlineQueue.push("beacon_signal", signal);
     }
@@ -163,7 +163,8 @@ export class SocketClient {
 
   public sendSitrep(text: string) {
     if (this.ws?.readyState === WebSocket.OPEN && navigator.onLine) {
-      this.ws.send(JSON.stringify({ type: "sitrep", text }));
+      const msg: WsMessage = { type: "sitrep", text };
+      this.ws.send(JSON.stringify(msg));
     } else {
       offlineQueue.push("sitrep", text);
     }

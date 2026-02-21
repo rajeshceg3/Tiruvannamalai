@@ -2,7 +2,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { Server, IncomingMessage } from "http";
 import { sessionParser } from "./auth";
-import { wsMessageSchema } from "@shared/schema";
+import { wsMessageSchema, type ServerToClientMessage } from "@shared/schema";
 import { locationService } from "./services/location-service";
 import { logger } from "./lib/logger";
 import { Request, Response } from "express";
@@ -169,7 +169,7 @@ export function setupWebSocket(httpServer: Server) {
     });
   });
 
-  function broadcastToGroup(groupId: number, message: unknown, excludeWs?: UserSocket) {
+  function broadcastToGroup(groupId: number, message: ServerToClientMessage, excludeWs?: UserSocket) {
     if (groupClients.has(groupId)) {
       groupClients.get(groupId)!.forEach(client => {
         if (client !== excludeWs && client.readyState === WebSocket.OPEN) {
