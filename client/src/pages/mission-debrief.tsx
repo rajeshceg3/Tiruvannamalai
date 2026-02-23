@@ -4,14 +4,17 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { MobileSidebar } from "@/components/layout/mobile-sidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Award, MapPin, Footprints, PlayCircle, BarChart3 } from "lucide-react";
+import { Loader2, Award, MapPin, Footprints, PlayCircle, BarChart3, Share } from "lucide-react";
 import { motion } from "framer-motion";
 import { formatDuration, intervalToDuration } from "date-fns";
 import React, { useState, useEffect, useRef } from "react";
 import { AARMap } from "@/components/aar/aar-map";
 import { TimelineControls } from "@/components/aar/timeline-controls";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 
 export default function MissionDebriefPage() {
+  const { toast } = useToast();
   const { data: shrines } = useQuery<Shrine[]>({ queryKey: ["/api/shrines"] });
   const { data: visits } = useQuery<Visit[]>({ queryKey: ["/api/visits"] });
   const { data: group } = useQuery<Group>({ queryKey: ["/api/groups/current"] });
@@ -23,6 +26,13 @@ export default function MissionDebriefPage() {
     enabled: !!groupId,
     refetchInterval: false, // Don't refetch automatically during playback
   });
+
+  const shareMission = () => {
+    toast({
+        title: "Mission Data Exported",
+        description: "Your pilgrimage statistics are ready to share.",
+    });
+  };
 
   if (!shrines || !visits) {
     return (
@@ -50,6 +60,11 @@ export default function MissionDebriefPage() {
           >
             <h1 className="text-4xl font-bold tracking-tight">Mission Debrief</h1>
             <p className="text-muted-foreground text-lg">Tactical Review & Spiritual Statistics</p>
+            <div className="flex justify-center pt-2">
+                <Button variant="outline" onClick={shareMission} className="gap-2">
+                    <Share className="w-4 h-4" /> Share Mission
+                </Button>
+            </div>
           </motion.div>
 
           <Tabs defaultValue="stats" className="space-y-4">
@@ -113,18 +128,21 @@ function StatsView({ shrines, visits }: { shrines: Shrine[], visits: Visit[] }) 
                 <StatsCard
                 icon={<Award className="w-8 h-8 text-yellow-500" />}
                 label="Completion"
+                subLabel="Progress towards inner fullness"
                 value={`${progress}%`}
                 delay={0.1}
                 />
                 <StatsCard
                 icon={<MapPin className="w-8 h-8 text-blue-500" />}
                 label="Shrines Visited"
+                subLabel="Sacred waypoints activated"
                 value={`${visitedCount} / ${totalShrines}`}
                 delay={0.2}
                 />
                 <StatsCard
                 icon={<Footprints className="w-8 h-8 text-green-500" />}
                 label="Time on Path"
+                subLabel="Duration of your sadhana"
                 value={duration}
                 delay={0.3}
                 />
@@ -253,7 +271,7 @@ function AARPlayer({ logs, sitreps }: { logs: MovementLog[], sitreps: SitRep[] }
     );
 }
 
-function StatsCard({ icon, label, value, delay }: { icon: React.ReactNode, label: string, value: string, delay: number }) {
+function StatsCard({ icon, label, subLabel, value, delay }: { icon: React.ReactNode, label: string, subLabel: string, value: string, delay: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
@@ -267,7 +285,8 @@ function StatsCard({ icon, label, value, delay }: { icon: React.ReactNode, label
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold">{value}</div>
-            <div className="text-sm text-muted-foreground">{label}</div>
+            <div className="text-sm font-medium text-foreground">{label}</div>
+            <div className="text-xs text-muted-foreground">{subLabel}</div>
           </div>
         </CardContent>
       </Card>

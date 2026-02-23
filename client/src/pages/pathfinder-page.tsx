@@ -9,6 +9,8 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { MobileSidebar } from "@/components/layout/mobile-sidebar";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ShieldCheck } from "lucide-react";
 
 export default function PathfinderPage() {
   const { toast } = useToast();
@@ -85,6 +87,14 @@ export default function PathfinderPage() {
              </p>
           </div>
 
+          <Alert className="bg-blue-500/10 border-blue-500/20 text-blue-700 dark:text-blue-400">
+            <ShieldCheck className="h-4 w-4" />
+            <AlertTitle>Pilgrim's Safety</AlertTitle>
+            <AlertDescription>
+              Hydrate frequently. The path is long and the sun is strong. Respect the silence of the inner path.
+            </AlertDescription>
+          </Alert>
+
           <Tabs defaultValue="compass" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="compass">Navigation</TabsTrigger>
@@ -137,7 +147,10 @@ export default function PathfinderPage() {
                          <span className="text-xl">{shrine.emoji}</span>
                        </CardHeader>
                        <CardContent>
-                         <div className="text-xs text-muted-foreground">{shrine.element}</div>
+                         <div className="text-xs text-muted-foreground font-semibold">{shrine.element}</div>
+                         <p className="text-xs mt-2 text-muted-foreground line-clamp-2 italic">
+                           "{shrine.significance}"
+                         </p>
                          {isVisited && <div className="text-xs text-green-500 font-bold mt-2">COMPLETED</div>}
                        </CardContent>
                      </Card>
