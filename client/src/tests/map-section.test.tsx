@@ -34,13 +34,20 @@ global.ResizeObserver = class ResizeObserver {
 };
 
 // Mock IntersectionObserver for framer-motion
-global.IntersectionObserver = class IntersectionObserver {
+class MockIntersectionObserver implements IntersectionObserver {
+  readonly root: Element | Document | null = null;
+  readonly rootMargin: string = "";
+  readonly thresholds: ReadonlyArray<number> = [];
+
   constructor() {}
+
   observe() {}
   unobserve() {}
   disconnect() {}
   takeRecords() { return []; }
-} as any;
+}
+
+global.IntersectionObserver = MockIntersectionObserver;
 
 describe("MapSection Component", () => {
   it("renders without crashing", () => {
