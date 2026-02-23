@@ -3,15 +3,14 @@ import { Shrine } from "@shared/schema";
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
+import type * as Leaflet from "leaflet";
 
 // Leaflet imports - using dynamic import to avoid SSR issues
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let L: any;
+let L: typeof Leaflet;
 
 export default function MapSection() {
   const mapRef = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mapInstanceRef = useRef<any>(null);
+  const mapInstanceRef = useRef<Leaflet.Map | null>(null);
   
   const { data: shrines, isLoading } = useQuery<Shrine[]>({
     queryKey: ["/api/shrines"],
@@ -34,8 +33,9 @@ export default function MapSection() {
         L = leafletModule.default;
         
         // Fix for default markers
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        delete (L.Icon.Default.prototype as any)._getIconUrl;
+        type DefaultIconPrototype = Leaflet.Icon.Default & { _getIconUrl?: string };
+        delete (L.Icon.Default.prototype as DefaultIconPrototype)._getIconUrl;
+
         L.Icon.Default.mergeOptions({
           iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
           iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
@@ -88,7 +88,8 @@ export default function MapSection() {
   };
 
   const addShrineMarkers = () => {
-    if (!mapInstanceRef.current || !shrines) return;
+    const map = mapInstanceRef.current;
+    if (!map || !shrines) return;
 
     // Add custom markers for each sacred site
     shrines.forEach((shrine) => {
@@ -100,7 +101,7 @@ export default function MapSection() {
         weight: 3,
         opacity: 1,
         fillOpacity: 0.8
-      }).addTo(mapInstanceRef.current);
+      }).addTo(map);
 
       // Create popup content
       const popupContent = `
