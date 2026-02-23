@@ -7,7 +7,6 @@ import { locationService } from "./services/location-service";
 import { logger } from "./lib/logger";
 import { Request, Response } from "express";
 
-// UserSocket must be exported or used consistently
 export interface UserSocket extends WebSocket {
   userId: number;
 }
