@@ -17,12 +17,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { MissionFailed } from "@/components/ui/mission-failed";
 import { type InsertWaypoint, type CommandCenterResponse, type Group } from "@shared/schema";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Info } from "lucide-react";
 
 export default function GroupCommand() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
 
   // 1. Fetch Basic Group Info first to get ID
   const {
@@ -263,11 +267,16 @@ export default function GroupCommand() {
         <div className="max-w-6xl mx-auto space-y-8">
             {/* Header Area */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                <h1 className="text-3xl font-bold tracking-tight">Squadron Overwatch</h1>
-                <p className="text-muted-foreground mt-1">
-                    Real-time tactical coordination for group {group.name}.
-                </p>
+                <div className="flex items-start gap-4">
+                  <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Squadron Overwatch</h1>
+                    <p className="text-muted-foreground mt-1">
+                        Real-time tactical coordination for group {group.name}.
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => setShowInfo(true)} aria-label="Tactical Guide">
+                    <Info className="h-5 w-5" />
+                  </Button>
                 </div>
 
                 <div className="flex gap-4 items-center">
@@ -290,33 +299,56 @@ export default function GroupCommand() {
                 <div className="lg:col-span-2 flex flex-col gap-4 h-full">
                      {/* Beacon Controls */}
                     <div className="grid grid-cols-3 gap-2 flex-none">
-                        <Button
-                            size="lg"
-                            variant={personalStatus === "sos" ? "destructive" : "outline"}
-                            className="h-16 text-sm md:text-lg border-2 flex flex-col gap-1"
-                            onClick={() => broadcastBeacon("SOS")}
-                        >
-                            <AlertCircle className="h-5 w-5" />
-                            SOS
-                        </Button>
-                        <Button
-                            size="lg"
-                            variant={personalStatus === "regroup" ? "default" : "outline"}
-                            className="h-16 text-sm md:text-lg border-2 flex flex-col gap-1"
-                            onClick={() => broadcastBeacon("REGROUP")}
-                        >
-                            <Users className="h-5 w-5" />
-                            REGROUP
-                        </Button>
-                        <Button
-                            size="lg"
-                            variant="outline"
-                            className="h-16 text-sm md:text-lg border-2 flex flex-col gap-1"
-                            onClick={() => broadcastBeacon("MOVING")}
-                        >
-                            <Activity className="h-5 w-5" />
-                            MOVING
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                                size="lg"
+                                variant={personalStatus === "sos" ? "destructive" : "outline"}
+                                className="h-16 text-sm md:text-lg border-2 flex flex-col gap-1"
+                                onClick={() => broadcastBeacon("SOS")}
+                            >
+                                <AlertCircle className="h-5 w-5" />
+                                SOS
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Signal immediate distress to all members.</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                                size="lg"
+                                variant={personalStatus === "regroup" ? "default" : "outline"}
+                                className="h-16 text-sm md:text-lg border-2 flex flex-col gap-1"
+                                onClick={() => broadcastBeacon("REGROUP")}
+                            >
+                                <Users className="h-5 w-5" />
+                                REGROUP
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Request all members to converge on your location.</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                                size="lg"
+                                variant="outline"
+                                className="h-16 text-sm md:text-lg border-2 flex flex-col gap-1"
+                                onClick={() => broadcastBeacon("MOVING")}
+                            >
+                                <Activity className="h-5 w-5" />
+                                MOVING
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Update status to 'Moving' - actively hiking.</p>
+                          </TooltipContent>
+                        </Tooltip>
                     </div>
 
                     {isCreator && (
@@ -365,6 +397,14 @@ export default function GroupCommand() {
                              />
                         </CardContent>
                     </Card>
+
+                    <Alert className="bg-muted/50 border-dashed">
+                      <Info className="h-4 w-4" />
+                      <AlertTitle>Tactical Tip</AlertTitle>
+                      <AlertDescription>
+                        Stay within 50m of waypoints for optimal signal. Maintain visual contact on the map during night operations.
+                      </AlertDescription>
+                    </Alert>
                 </div>
 
                 {/* Right Column: SitRep Feed & Squad List */}
@@ -488,6 +528,47 @@ export default function GroupCommand() {
                         </Button>
                     </DialogFooter>
                 </DialogContent>
+            </Dialog>
+
+            <Dialog open={showInfo} onOpenChange={setShowInfo}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Tactical Command Guide</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="grid gap-4">
+                    <div className="grid grid-cols-[auto,1fr] gap-4 items-start">
+                      <div className="p-2 bg-destructive/10 rounded-full">
+                        <AlertCircle className="w-5 h-5 text-destructive" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-destructive">SOS Beacon</h4>
+                        <p className="text-sm text-muted-foreground">Use only in emergencies. Triggers high-priority alert on all squad devices and persistent map pulsing.</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-[auto,1fr] gap-4 items-start">
+                      <div className="p-2 bg-primary/10 rounded-full">
+                        <Users className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-primary">Regroup Protocol</h4>
+                        <p className="text-sm text-muted-foreground">Signals intent to gather. Sets your location as the temporary rally point.</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-[auto,1fr] gap-4 items-start">
+                      <div className="p-2 bg-muted rounded-full">
+                        <Flag className="w-5 h-5 text-foreground" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold">Waypoints</h4>
+                        <p className="text-sm text-muted-foreground">Squad leaders can drop tactical markers on the map: Rally Points, Hazard warnings, and Objectives.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
             </Dialog>
         </div>
       </main>

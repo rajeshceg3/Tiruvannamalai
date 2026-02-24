@@ -1,104 +1,149 @@
-import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/use-auth";
-import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import HeroSection from "@/components/hero-section";
+import { Footer } from "@/components/layout/footer";
+import { BookOpen, Map, Scroll, Quote, User } from "lucide-react";
 import { motion } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function HomePage() {
-  const { user } = useAuth();
-  const [imgLoaded, setImgLoaded] = useState(false);
+  const testimonials = [
+    {
+      name: "Lakshmi Priya",
+      location: "Chennai, India",
+      quote: "The detailed information about each Lingam transformed my Girivalam experience. I felt a deeper connection at every step.",
+      avatar: "LP"
+    },
+    {
+      name: "David Miller",
+      location: "London, UK",
+      quote: "Even from afar, the virtual journey helped me find stillness in my chaotic daily life. The 'Daily Wisdom' is my morning ritual.",
+      avatar: "DM"
+    },
+    {
+      name: "Ravi Kumar",
+      location: "Bangalore, India",
+      quote: "The group coordination features were a lifesaver during the crowded full moon walk. We never lost track of our elderly parents.",
+      avatar: "RK"
+    }
+  ];
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero Section */}
-      <div className="relative h-[100dvh] md:h-[600px] flex items-center justify-center text-white overflow-hidden">
-        <div className="absolute inset-0 z-0 bg-muted">
-          {!imgLoaded && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
-               <Loader2 className="w-10 h-10 animate-spin text-white/50" />
-            </div>
-          )}
-          <img
-            src="https://images.unsplash.com/photo-1582510003544-4d00b7f74220?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80"
-            alt="Arunachala Hill, a sacred mountain in Tamil Nadu, India, symbolizing Lord Shiva."
-            // Removed lazy loading for Hero image to improve LCP
-            className={`w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
-            onLoad={() => setImgLoaded(true)}
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-background" />
-        </div>
-
-        <div className="relative z-10 text-center space-y-6 max-w-4xl px-4 mt-[-60px] md:mt-0">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-          >
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight drop-shadow-2xl">
-              Sacred Steps
-            </h1>
-          </motion.div>
-          <motion.p
-            className="text-lg md:text-2xl font-light opacity-90 max-w-2xl mx-auto drop-shadow-md leading-relaxed"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.8 }}
-          >
-            A digital companion for the Giri Pradakshina.
-            Discover the 8 Lingams, track your journey, and find inner peace.
-          </motion.p>
-
-          <motion.div
-            className="flex flex-col sm:flex-row gap-4 justify-center pt-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8, duration: 0.6 }}
-          >
-            {user ? (
-               <Link href="/dashboard">
-                <Button size="lg" className="h-12 text-lg px-10 shadow-xl hover:scale-105 transition-all duration-300 bg-primary hover:bg-primary/90 rounded-full font-medium">
-                  Continue Journey
-                </Button>
-              </Link>
-            ) : (
-              <Link href="/auth">
-                <Button size="lg" className="h-12 text-lg px-10 shadow-xl hover:scale-105 transition-all duration-300 bg-primary hover:bg-primary/90 rounded-full font-medium">
-                  Start Pilgrimage
-                </Button>
-              </Link>
-            )}
-            {/* Removed generic API button for cleaner UX */}
-          </motion.div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background flex flex-col">
+      <HeroSection />
 
       {/* Features Grid */}
-      <div className="container mx-auto px-4 py-24">
+      <section id="features" className="container mx-auto px-4 py-24 scroll-mt-20">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Your Spiritual Toolkit</h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            Everything you need to make your pilgrimage meaningful, safe, and deeply personal.
+          </p>
+        </motion.div>
+
         <div className="grid md:grid-cols-3 gap-12 text-center">
-          <div className="space-y-4">
-            <div className="text-4xl mb-4" role="img" aria-label="Sacred Om Symbol">🕉️</div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="space-y-4 p-6 rounded-2xl hover:bg-muted/30 transition-colors"
+          >
+            <div className="mx-auto w-16 h-16 bg-saffron/10 rounded-full flex items-center justify-center text-saffron mb-6">
+              <Scroll className="w-8 h-8" />
+            </div>
             <h3 className="text-2xl font-semibold">Ancient Wisdom</h3>
-            <p className="text-muted-foreground">
-              Learn the significance of each Lingam and the elemental energies they represent.
+            <p className="text-muted-foreground leading-relaxed">
+              Unlock the secrets of the 8 Lingams. Learn the elemental significance (Pancha Bhoota) and chanting mantras for each sacred stop.
             </p>
-          </div>
-          <div className="space-y-4">
-            <div className="text-4xl mb-4">🗺️</div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+            className="space-y-4 p-6 rounded-2xl hover:bg-muted/30 transition-colors"
+          >
+            <div className="mx-auto w-16 h-16 bg-terracotta/10 rounded-full flex items-center justify-center text-terracotta mb-6">
+              <Map className="w-8 h-8" />
+            </div>
             <h3 className="text-2xl font-semibold">Interactive Map</h3>
-            <p className="text-muted-foreground">
-              Track your progress around the sacred hill and visualize your spiritual path.
+            <p className="text-muted-foreground leading-relaxed">
+              Navigate the 14km path with confidence. Real-time GPS tracking ensures you never miss a shrine or a crucial turn on the Girivalam path.
             </p>
-          </div>
-          <div className="space-y-4">
-            <div className="text-4xl mb-4">📔</div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.6, duration: 0.6 }}
+            className="space-y-4 p-6 rounded-2xl hover:bg-muted/30 transition-colors"
+          >
+            <div className="mx-auto w-16 h-16 bg-meditation/10 rounded-full flex items-center justify-center text-meditation mb-6">
+              <BookOpen className="w-8 h-8" />
+            </div>
             <h3 className="text-2xl font-semibold">Personal Journal</h3>
-            <p className="text-muted-foreground">
-              Record your thoughts and realizations at each stop on your journey.
+            <p className="text-muted-foreground leading-relaxed">
+              Document your inner journey. Capture realizations, prayers, and moments of silence in your private spiritual diary attached to each location.
             </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="bg-muted/20 py-24">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Voices of the Path</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Hear from fellow pilgrims who have walked the path with Sacred Steps.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {testimonials.map((t, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1, duration: 0.5 }}
+              >
+                <Card className="h-full border-none shadow-lg bg-card/50 backdrop-blur">
+                  <CardContent className="p-8 flex flex-col gap-6">
+                    <Quote className="w-10 h-10 text-primary/20" />
+                    <p className="text-lg italic text-muted-foreground flex-1">"{t.quote}"</p>
+                    <div className="flex items-center gap-4 mt-auto">
+                      <Avatar className="h-12 w-12 border-2 border-primary/10">
+                        <AvatarFallback className="bg-primary/5 text-primary font-bold">{t.avatar}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-semibold">{t.name}</div>
+                        <div className="text-xs text-muted-foreground">{t.location}</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
           </div>
         </div>
-      </div>
+      </section>
+
+      <Footer />
     </div>
   );
 }

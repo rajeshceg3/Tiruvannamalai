@@ -1,6 +1,10 @@
 import { motion } from "framer-motion";
+import { Link } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function HeroSection() {
+  const { user } = useAuth();
+
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
@@ -64,29 +68,30 @@ export default function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 1.2 }}
           >
-            <motion.button 
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => scrollToSection('journey')}
-              className="group bg-gradient-to-r from-saffron to-terracotta text-white px-8 py-4 rounded-2xl font-medium text-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-3"
-            >
-              <span>Begin Sacred Journey</span>
-              <motion.span
-                animate={{ x: [0, 4, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
+            <Link href={user ? "/dashboard" : "/auth"}>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="group bg-gradient-to-r from-saffron to-terracotta text-white px-8 py-4 rounded-2xl font-medium text-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-3 cursor-pointer"
               >
-                🛤️
-              </motion.span>
-            </motion.button>
+                <span>{user ? "Continue Journey" : "Begin Sacred Journey"}</span>
+                <motion.span
+                  animate={{ x: [0, 4, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  🛤️
+                </motion.span>
+              </motion.div>
+            </Link>
             
             <motion.button 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => scrollToSection('map')}
-              className="group bg-white/80 backdrop-blur text-gray-700 px-8 py-4 rounded-2xl font-medium text-lg hover:bg-white hover:shadow-lg transition-all duration-300 flex items-center space-x-3"
+              onClick={() => scrollToSection('features')}
+              className="group bg-white/80 backdrop-blur text-gray-700 px-8 py-4 rounded-2xl font-medium text-lg hover:bg-white hover:shadow-lg transition-all duration-300 flex items-center space-x-3 cursor-pointer"
             >
               <span className="text-meditation">🗺️</span>
-              <span>Explore Sacred Map</span>
+              <span>Explore Features</span>
             </motion.button>
           </motion.div>
         </motion.div>

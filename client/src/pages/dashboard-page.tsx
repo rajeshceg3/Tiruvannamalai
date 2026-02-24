@@ -16,6 +16,15 @@ import { useInView } from "react-intersection-observer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MissionFailed } from "@/components/ui/mission-failed";
 import { useCheckIn } from "@/hooks/use-check-in";
+import { Quote } from "lucide-react";
+
+const DAILY_QUOTES = [
+  "Your own Self-Realization is the greatest service you can render the world. - Ramana Maharshi",
+  "Happiness is your nature. It is not wrong to desire it. What is wrong is seeking it outside when it is inside. - Ramana Maharshi",
+  "The path is not a line, but a circle. You are not going anywhere, you are returning. - Ancient Wisdom",
+  "Walk as if you are kissing the Earth with your feet. - Thich Nhat Hanh",
+  "The purpose of the pilgrimage is to quiet the mind so the soul can speak. - Sacred Steps",
+];
 
 function DashboardSkeleton() {
   return (
@@ -106,6 +115,8 @@ export default function DashboardPage() {
     queryKey: ["/api/journey"]
   });
 
+  const dailyQuote = useMemo(() => DAILY_QUOTES[Math.floor(Math.random() * DAILY_QUOTES.length)], []);
+
   // Use the extracted hook
   const checkInMutation = useCheckIn(shrines);
 
@@ -149,6 +160,16 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          <Card className="mb-8 bg-gradient-to-r from-saffron/10 to-transparent border-none shadow-sm">
+            <div className="p-6 flex gap-4 items-start">
+              <Quote className="w-8 h-8 text-saffron/50 flex-shrink-0" />
+              <div>
+                <h3 className="font-semibold text-saffron mb-1">Daily Wisdom</h3>
+                <p className="text-muted-foreground italic">"{dailyQuote}"</p>
+              </div>
+            </div>
+          </Card>
+
           <JourneyProgress journey={currentJourney} shrines={shrines} />
 
           <div className="grid lg:grid-cols-3 gap-8">
@@ -171,9 +192,9 @@ export default function DashboardPage() {
               <h2 className="text-2xl font-bold mb-6">Your Journal</h2>
               <ScrollArea className="h-[calc(100vh-300px)] pr-4">
                 {visits.length === 0 ? (
-                  <div className="text-center p-8 border border-dashed rounded-lg text-muted-foreground">
-                    <p>Your journal is empty.</p>
-                    <p className="text-sm mt-2">Check in to a shrine to start writing.</p>
+                  <div className="text-center p-8 border border-dashed rounded-lg text-muted-foreground bg-muted/20">
+                    <p className="font-medium">Your journal awaits.</p>
+                    <p className="text-sm mt-2">The path is waiting for your footsteps. Check in to a shrine to capture your first realization.</p>
                   </div>
                 ) : (
                   <>
