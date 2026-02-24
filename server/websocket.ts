@@ -12,7 +12,7 @@ export interface UserSocket extends WebSocket {
 }
 
 // Extend IncomingMessage to support session
-export interface SessionRequest extends IncomingMessage {
+export interface SessionIncomingMessage extends IncomingMessage {
   session?: {
     passport?: {
       user?: number;
@@ -27,11 +27,11 @@ export function setupWebSocket(httpServer: Server) {
     if (request.url === "/ws") {
       const sessionMiddleware = getSessionMiddleware();
 
-      // Use the session middleware to attach session to the request
-      // We cast to Request/Response to satisfy express-session types (which expects Express.Request).
-      // IncomingMessage is compatible enough for session parsing purposes here.
+      // Use the session middleware to attach session to the request.
+      // We explicitly cast to Request/Response to satisfy express-session types (which expects Express.Request).
+      // IncomingMessage is compatible enough for session parsing purposes here as we only need to read the session.
       sessionMiddleware(request as unknown as Request, {} as unknown as Response, () => {
-        const req = request as SessionRequest;
+        const req = request as SessionIncomingMessage;
 
         if (!req.session?.passport?.user) {
           socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
