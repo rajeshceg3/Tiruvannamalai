@@ -122,7 +122,7 @@ describe("DashboardPage", () => {
     });
 
     render(<DashboardPage />);
-    expect(screen.getByText("Your journal awaits.")).toBeDefined();
+    expect(screen.getByText("Your Journal Awaits")).toBeDefined();
   });
 
   it("renders visits in journal", () => {
