@@ -1,29 +1,35 @@
 import HeroSection from "@/components/hero-section";
 import { Footer } from "@/components/layout/footer";
-import { BookOpen, Map, Scroll, Quote, User } from "lucide-react";
+import { BookOpen, Map, Scroll, Quote } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function HomePage() {
   const testimonials = [
     {
       name: "Lakshmi Priya",
       location: "Chennai, India",
-      quote: "The detailed information about each Lingam transformed my Girivalam experience. I felt a deeper connection at every step.",
+      quote: "The deep spiritual context provided for each Lingam transformed my Girivalam experience from a walk into a true pilgrimage. I felt the presence of the divine at every step.",
       avatar: "LP"
     },
     {
       name: "David Miller",
       location: "London, UK",
-      quote: "Even from afar, the virtual journey helped me find stillness in my chaotic daily life. The 'Daily Wisdom' is my morning ritual.",
+      quote: "Even from thousands of miles away, the virtual journey helped me find a center of stillness in my chaotic daily life. The 'Daily Wisdom' has become my essential morning ritual.",
       avatar: "DM"
     },
     {
       name: "Ravi Kumar",
       location: "Bangalore, India",
-      quote: "The group coordination features were a lifesaver during the crowded full moon walk. We never lost track of our elderly parents.",
+      quote: "The group coordination features were a lifesaver during the crowded full moon walk. We tracked our elderly parents in real-time and never felt the anxiety of separation.",
       avatar: "RK"
+    },
+    {
+      name: "Sarah Jenkins",
+      location: "Sydney, Australia",
+      quote: "I didn't expect the emotional release I felt using the journaling feature at the Kubera Lingam. This app holds space for you in a way technology rarely does.",
+      avatar: "SJ"
     }
   ];
 
@@ -59,7 +65,7 @@ export default function HomePage() {
             </div>
             <h3 className="text-2xl font-semibold">Ancient Wisdom</h3>
             <p className="text-muted-foreground leading-relaxed">
-              Unlock the secrets of the 8 Lingams. Learn the elemental significance (Pancha Bhoota) and chanting mantras for each sacred stop.
+              Uncover the mystical significance of the 8 Ashta Lingams. Access curated mantras, elemental associations, and historical lore that turn every step into a lesson in consciousness.
             </p>
           </motion.div>
 
@@ -73,9 +79,9 @@ export default function HomePage() {
             <div className="mx-auto w-16 h-16 bg-terracotta/10 rounded-full flex items-center justify-center text-terracotta mb-6">
               <Map className="w-8 h-8" />
             </div>
-            <h3 className="text-2xl font-semibold">Interactive Map</h3>
+            <h3 className="text-2xl font-semibold">Pilgrim's Compass</h3>
             <p className="text-muted-foreground leading-relaxed">
-              Navigate the 14km path with confidence. Real-time GPS tracking ensures you never miss a shrine or a crucial turn on the Girivalam path.
+              Walk the 14km path with confidence. Our GPS-enabled Pathfinder ensures you never miss a shrine, while 'Squadron Overwatch' keeps your group connected even in the densest crowds.
             </p>
           </motion.div>
 
@@ -89,9 +95,9 @@ export default function HomePage() {
             <div className="mx-auto w-16 h-16 bg-meditation/10 rounded-full flex items-center justify-center text-meditation mb-6">
               <BookOpen className="w-8 h-8" />
             </div>
-            <h3 className="text-2xl font-semibold">Personal Journal</h3>
+            <h3 className="text-2xl font-semibold">Inner Sanctum Journal</h3>
             <p className="text-muted-foreground leading-relaxed">
-              Document your inner journey. Capture realizations, prayers, and moments of silence in your private spiritual diary attached to each location.
+              Capture the whispers of your soul. Document your realizations, prayers, and moments of silence in a private digital diary geo-tagged to each sacred location on the path.
             </p>
           </motion.div>
         </div>
@@ -113,7 +119,7 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {testimonials.map((t, i) => (
               <motion.div
                 key={i}

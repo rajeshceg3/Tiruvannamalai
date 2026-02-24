@@ -533,7 +533,7 @@ export default function GroupCommand() {
             <Dialog open={showInfo} onOpenChange={setShowInfo}>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle>Tactical Command Guide</DialogTitle>
+                  <DialogTitle>Squadron Protocols</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="grid gap-4">
@@ -543,7 +543,7 @@ export default function GroupCommand() {
                       </div>
                       <div>
                         <h4 className="font-semibold text-destructive">SOS Beacon</h4>
-                        <p className="text-sm text-muted-foreground">Use only in emergencies. Triggers high-priority alert on all squad devices and persistent map pulsing.</p>
+                        <p className="text-sm text-muted-foreground">Critical distress signal. Activates immediate audiovisual alarm on all squad devices. Use for medical emergencies or lost contact. The map will pulse red at your location until cleared.</p>
                       </div>
                     </div>
 
@@ -553,7 +553,7 @@ export default function GroupCommand() {
                       </div>
                       <div>
                         <h4 className="font-semibold text-primary">Regroup Protocol</h4>
-                        <p className="text-sm text-muted-foreground">Signals intent to gather. Sets your location as the temporary rally point.</p>
+                        <p className="text-sm text-muted-foreground">Tactical muster call. Designates your current coordinates as the immediate rally point for the squad. Use when the group is fragmented or before entering crowded zones.</p>
                       </div>
                     </div>
 
@@ -562,8 +562,12 @@ export default function GroupCommand() {
                         <Flag className="w-5 h-5 text-foreground" />
                       </div>
                       <div>
-                        <h4 className="font-semibold">Waypoints</h4>
-                        <p className="text-sm text-muted-foreground">Squad leaders can drop tactical markers on the map: Rally Points, Hazard warnings, and Objectives.</p>
+                        <h4 className="font-semibold">Waypoints & Markers</h4>
+                        <p className="text-sm text-muted-foreground">
+                          <strong>Rally:</strong> Designated meeting spot.<br/>
+                          <strong>Hazard:</strong> Obstruction, crowd crush, or slippery path.<br/>
+                          <strong>Objective:</strong> Shrine or point of interest.
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -618,10 +622,10 @@ function NoGroupState() {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4">
-            Yatra Command
+            Squadron Command
           </h1>
           <p className="text-muted-foreground text-lg">
-            Coordinate your pilgrimage. Track your squad. Ensure no one is left behind.
+            The path is safer together. Form a squad to track real-time locations, coordinate meetups, and ensure every pilgrim in your group completes the journey safely.
           </p>
         </div>
 

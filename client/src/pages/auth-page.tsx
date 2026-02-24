@@ -42,7 +42,7 @@ export default function AuthPage() {
             </div>
             <CardTitle className="text-2xl font-bold">Welcome to Sacred Steps</CardTitle>
             <CardDescription>
-              Begin your digital pilgrimage. Track your journey, meditate on the shrines, and find inner peace.
+              Begin your digital pilgrimage. Track your journey, meditate on the 8 Ashta Lingams, and find the stillness within.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -155,9 +155,9 @@ export default function AuthPage() {
         />
 
         <div className="relative z-20 max-w-lg mx-auto text-white space-y-6">
-          <h2 className="text-4xl font-bold leading-tight">"It is not the feet that walk the path, but the heart that beats the rhythm."</h2>
+          <h2 className="text-4xl font-bold leading-tight">"In the end, we are all just walking each other home."</h2>
           <p className="text-lg opacity-90">
-            Join thousands of seekers on the virtual path around Arunachala. Mark your visits, journal your insights, and visualize your spiritual progress.
+            Join a global community of seekers walking the path of Arunachala. Whether you are thousands of miles away or taking your first step on the soil of Tiruvannamalai, your journey begins here.
           </p>
         </div>
       </div>

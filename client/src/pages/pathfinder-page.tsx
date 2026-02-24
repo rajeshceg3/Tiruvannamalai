@@ -11,10 +11,24 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { MobileSidebar } from "@/components/layout/mobile-sidebar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ShieldCheck } from "lucide-react";
+import { useMemo } from "react";
+
+const SAFETY_TIPS = [
+  "Stay hydrated. The Girivalam path is 14km long, and the South Indian sun can be intense. Carry a reusable water bottle.",
+  "Walk barefoot if possible. It connects you to the earth and is traditional, but listen to your body and wear footwear if needed.",
+  "Respect the silence. Many sadhus and pilgrims are in deep meditation. Keep conversations low and phones on silent.",
+  "Walk clockwise (Pradakshina). Keep the hill on your right side as a sign of respect to the deity.",
+  "Be mindful of traffic. While parts of the path are pedestrian-only, some sections share the road with vehicles.",
+  "Carry a flashlight if walking at night. The path is lit, but some sections can be dark.",
+  "Do not feed the monkeys. They can be aggressive if they see food."
+];
 
 export default function PathfinderPage() {
   const { toast } = useToast();
   const [selectedShrineId, setSelectedShrineId] = useState<string | null>(null);
+
+  // Rotate tips every visit or just random
+  const safetyTip = useMemo(() => SAFETY_TIPS[Math.floor(Math.random() * SAFETY_TIPS.length)], []);
 
   const { data: shrines, isLoading: isLoadingShrines } = useQuery<Shrine[]>({
     queryKey: ["/api/shrines"],
@@ -89,9 +103,10 @@ export default function PathfinderPage() {
 
           <Alert className="bg-blue-500/10 border-blue-500/20 text-blue-700 dark:text-blue-400">
             <ShieldCheck className="h-4 w-4" />
-            <AlertTitle>Pilgrim's Safety</AlertTitle>
-            <AlertDescription>
-              Hydrate frequently. The path is long and the sun is strong. Respect the silence of the inner path.
+            <AlertTitle>Pilgrim's Guide</AlertTitle>
+            <AlertDescription className="mt-2">
+              <span className="font-semibold block mb-1">Tip of the Day:</span>
+              {safetyTip}
             </AlertDescription>
           </Alert>
 
