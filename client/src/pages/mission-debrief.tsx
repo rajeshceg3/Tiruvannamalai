@@ -59,10 +59,10 @@ export default function MissionDebriefPage() {
             className="text-center space-y-2"
           >
             <h1 className="text-4xl font-bold tracking-tight">Mission Debrief</h1>
-            <p className="text-muted-foreground text-lg">Tactical Review & Spiritual Statistics</p>
+            <p className="text-muted-foreground text-lg">Review your journey's metrics and spiritual milestones.</p>
             <div className="flex justify-center pt-2">
                 <Button variant="outline" onClick={shareMission} className="gap-2">
-                    <Share className="w-4 h-4" /> Share Mission
+                    <Share className="w-4 h-4" /> Share Mission Report
                 </Button>
             </div>
           </motion.div>
@@ -155,12 +155,14 @@ function StatsView({ shrines, visits }: { shrines: Shrine[], visits: Visit[] }) 
                 className="bg-muted/50 rounded-lg p-8 text-center"
             >
                 <h2 className="text-2xl font-semibold mb-4">
-                {progress === 100 ? "Journey Complete" : "Path in Progress"}
+                {progress === 100 ? "Journey Completed" : progress > 50 ? "Over Halfway" : "Path in Progress"}
                 </h2>
-                <p className="max-w-2xl mx-auto text-muted-foreground">
+                <p className="max-w-2xl mx-auto text-muted-foreground leading-relaxed">
                 {progress === 100
-                    ? "You have successfully completed the Giri Pradakshina. May the energy of Arunachala stay with you forever."
-                    : "Keep going. Every step brings you closer to the center of your own being."
+                    ? "Om Namah Shivaya. You have completed the Giri Pradakshina, circling the center of the universe. Though the walk ends, the inner revolution has just begun. Carry this stillness with you."
+                    : progress > 50
+                      ? "You have crossed the threshold. The body may tire, but the spirit strengthens. Continue with devotion."
+                      : "The path stretches before you, full of promise. Every step is a prayer. Keep walking."
                 }
                 </p>
             </motion.div>

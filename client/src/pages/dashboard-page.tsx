@@ -24,6 +24,15 @@ const DAILY_QUOTES = [
   "The path is not a line, but a circle. You are not going anywhere, you are returning. - Ancient Wisdom",
   "Walk as if you are kissing the Earth with your feet. - Thich Nhat Hanh",
   "The purpose of the pilgrimage is to quiet the mind so the soul can speak. - Sacred Steps",
+  "Silence is the language of God, all else is poor translation. - Rumi",
+  "What you are looking for is what is looking. - St. Francis of Assisi",
+  "The cave you fear to enter holds the treasure you seek. - Joseph Campbell",
+  "Be still and know. - Psalm 46:10",
+  "Arunachala is the self. To know the self is to know Arunachala. - Ramana Maharshi",
+  "The journey of a thousand miles begins with a single step. - Lao Tzu",
+  "You are not a drop in the ocean. You are the entire ocean in a drop. - Rumi",
+  "Let yourself be silently drawn by the strange pull of what you really love. It will not lead you astray. - Rumi",
+  "The foot feels the foot when it feels the ground. - Buddha",
 ];
 
 function DashboardSkeleton() {
@@ -193,8 +202,12 @@ export default function DashboardPage() {
               <ScrollArea className="h-[calc(100vh-300px)] pr-4">
                 {visits.length === 0 ? (
                   <div className="text-center p-8 border border-dashed rounded-lg text-muted-foreground bg-muted/20">
-                    <p className="font-medium">Your journal awaits.</p>
-                    <p className="text-sm mt-2">The path is waiting for your footsteps. Check in to a shrine to capture your first realization.</p>
+                    <p className="font-medium text-lg text-saffron">Your Journal Awaits</p>
+                    <p className="text-sm mt-2 leading-relaxed">
+                      "The ink of the scholar is more sacred than the blood of the martyr."
+                      <br /><br />
+                      This space is for your inner reflections. As you walk the path, pause at each shrine. Listen to the silence. Write down what you feel, what you release, and what you find. Your first entry begins with your first step.
+                    </p>
                   </div>
                 ) : (
                   <>

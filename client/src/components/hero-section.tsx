@@ -34,14 +34,14 @@ export default function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.2, delay: 0.2 }}
           >
-            🌄 Eight Sacred Sights
+            🌄 Eight Sacred Steps
             <motion.span 
               className="block text-saffron"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 1, delay: 0.6 }}
             >
-              That Will Transform
+              To Awakening
             </motion.span>
             <motion.span 
               className="block"
@@ -49,7 +49,7 @@ export default function HeroSection() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 1, delay: 0.8 }}
             >
-              Your Soul
+              The Infinite Self
             </motion.span>
           </motion.h1>
           
@@ -59,7 +59,7 @@ export default function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 1 }}
           >
-            Walk the mystical Girivalam path around Arunachala Hill and discover the cosmic wisdom of Tiruvannamalai's ancient Ashta Lingams 🕉️
+            Embark on the ancient Girivalam pilgrimage around the holy hill of Arunachala. Experience the cosmic energy of the Ashta Lingams and find the silence within. 🕉️
           </motion.p>
           
           <motion.div 
