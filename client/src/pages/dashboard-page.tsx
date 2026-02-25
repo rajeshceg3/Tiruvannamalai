@@ -33,6 +33,20 @@ const DAILY_QUOTES = [
   "You are not a drop in the ocean. You are the entire ocean in a drop. - Rumi",
   "Let yourself be silently drawn by the strange pull of what you really love. It will not lead you astray. - Rumi",
   "The foot feels the foot when it feels the ground. - Buddha",
+  "The universe is not outside of you. Look inside yourself; everything that you want, you already are. - Rumi",
+  "To find yourself, lose yourself in the service of others. - Mahatma Gandhi",
+  "Peace comes from within. Do not seek it without. - Buddha",
+  "When you do things from your soul, you feel a river moving in you, a joy. - Rumi",
+  "The wound is the place where the Light enters you. - Rumi",
+  "He who has conquered himself is the mightiest warrior. - Confucius",
+  "Knowing others is intelligence; knowing yourself is true wisdom. - Lao Tzu",
+  "Mastering others is strength; mastering yourself is true power. - Lao Tzu",
+  "Your task is not to seek for love, but merely to seek and find all the barriers within yourself that you have built against it. - Rumi",
+  "What you seek is seeking you. - Rumi",
+  "Set your life on fire. Seek those who fan your flames. - Rumi",
+  "Knock, and He'll open the door. Vanish, and He'll make you shine like the sun. - Rumi",
+  "Yesterday I was clever, so I wanted to change the world. Today I am wise, so I am changing myself. - Rumi",
+  "Don't grieve. Anything you lose comes round in another form. - Rumi"
 ];
 
 function DashboardSkeleton() {
@@ -202,11 +216,13 @@ export default function DashboardPage() {
               <ScrollArea className="h-[calc(100vh-300px)] pr-4">
                 {visits.length === 0 ? (
                   <div className="text-center p-8 border border-dashed rounded-lg text-muted-foreground bg-muted/20">
-                    <p className="font-medium text-lg text-saffron">Your Journal Awaits</p>
-                    <p className="text-sm mt-2 leading-relaxed">
-                      "The ink of the scholar is more sacred than the blood of the martyr."
+                    <p className="font-medium text-lg text-saffron">The Sacred Scroll</p>
+                    <p className="text-sm mt-4 leading-relaxed">
+                      This is not just a log of where your feet have been, but a map of where your soul has traveled.
                       <br /><br />
-                      This space is for your inner reflections. As you walk the path, pause at each shrine. Listen to the silence. Write down what you feel, what you release, and what you find. Your first entry begins with your first step.
+                      At each Lingam, the veil between worlds is thin. Pause. Listen. What does the silence say?
+                      <br /><br />
+                      Record your prayers, your releases, and your revelations here. One day, you will look back and see that this was not just a walk, but a becoming.
                     </p>
                   </div>
                 ) : (

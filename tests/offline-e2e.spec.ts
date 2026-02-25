@@ -42,7 +42,7 @@ test.describe('Offline UX Transitions', () => {
     // Since queue is empty, it should eventually hide.
 
     // Check for the Toast
-    await expect(page.getByText('Connection Restored')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Connection Restored', { exact: true })).toBeVisible({ timeout: 10000 });
 
     // Check that offline text is gone
     await expect(page.getByText('You are currently offline')).not.toBeVisible();

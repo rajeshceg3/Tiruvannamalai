@@ -34,14 +34,14 @@ export default function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.2, delay: 0.2 }}
           >
-            🌄 Eight Sacred Steps
+            Walk the Path of Fire
             <motion.span 
               className="block text-saffron"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 1, delay: 0.6 }}
             >
-              To Awakening
+              Awaken the Silence
             </motion.span>
             <motion.span 
               className="block"
@@ -49,7 +49,7 @@ export default function HeroSection() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 1, delay: 0.8 }}
             >
-              The Infinite Self
+              Within
             </motion.span>
           </motion.h1>
           
@@ -59,7 +59,7 @@ export default function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 1 }}
           >
-            Embark on the ancient Girivalam pilgrimage around the holy hill of Arunachala. Experience the cosmic energy of the Ashta Lingams and find the silence within. 🕉️
+            The Girivalam is not just a journey of feet, but a revolution of the soul. Circle the holy hill of Arunachala, unlock the eight gates of consciousness, and return to the source of who you are. 🕉️
           </motion.p>
           
           <motion.div 
@@ -74,7 +74,7 @@ export default function HeroSection() {
                 whileTap={{ scale: 0.95 }}
                 className="group bg-gradient-to-r from-saffron to-terracotta text-white px-8 py-4 rounded-2xl font-medium text-lg hover:shadow-xl transition-all duration-300 flex items-center space-x-3 cursor-pointer"
               >
-                <span>{user ? "Continue Journey" : "Begin Sacred Journey"}</span>
+                <span>{user ? "Continue Pilgrimage" : "Begin Your Pilgrimage"}</span>
                 <motion.span
                   animate={{ x: [0, 4, 0] }}
                   transition={{ duration: 2, repeat: Infinity }}

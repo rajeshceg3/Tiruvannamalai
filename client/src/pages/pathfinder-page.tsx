@@ -14,13 +14,19 @@ import { ShieldCheck } from "lucide-react";
 import { useMemo } from "react";
 
 const SAFETY_TIPS = [
+  "The mountain is considered a living form of Shiva. Treat every rock and plant with reverence.",
+  "Silence (Mouna) is the most powerful prayer. Try to walk at least one stretch of the path in complete silence.",
   "Stay hydrated. The Girivalam path is 14km long, and the South Indian sun can be intense. Carry a reusable water bottle.",
   "Walk barefoot if possible. It connects you to the earth and is traditional, but listen to your body and wear footwear if needed.",
   "Respect the silence. Many sadhus and pilgrims are in deep meditation. Keep conversations low and phones on silent.",
   "Walk clockwise (Pradakshina). Keep the hill on your right side as a sign of respect to the deity.",
   "Be mindful of traffic. While parts of the path are pedestrian-only, some sections share the road with vehicles.",
   "Carry a flashlight if walking at night. The path is lit, but some sections can be dark.",
-  "Do not feed the monkeys. They can be aggressive if they see food."
+  "Do not feed the monkeys. They can be aggressive if they see food.",
+  "Chant 'Om Arunachala' internally. Let the mantra synchronize with your footsteps.",
+  "If you feel tired, rest. There are many mandapams (halls) along the way. The journey is not a race.",
+  "Offer a smile to fellow pilgrims. We are all walking each other home.",
+  "Look up at the peak often. Its shape changes as you circle it, revealing different faces of the divine."
 ];
 
 export default function PathfinderPage() {
@@ -97,7 +103,7 @@ export default function PathfinderPage() {
           <div className="space-y-2">
              <h1 className="text-3xl font-bold tracking-tight">Pilgrim's Pathfinder</h1>
              <p className="text-muted-foreground">
-               Geospatial navigation and verification protocol.
+               Your digital compass for the sacred circuit. Navigate the 14km path with precision, locate every shrine, and stay connected with your group.
              </p>
           </div>
 

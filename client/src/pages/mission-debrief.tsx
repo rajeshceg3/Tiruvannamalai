@@ -155,14 +155,18 @@ function StatsView({ shrines, visits }: { shrines: Shrine[], visits: Visit[] }) 
                 className="bg-muted/50 rounded-lg p-8 text-center"
             >
                 <h2 className="text-2xl font-semibold mb-4">
-                {progress === 100 ? "Journey Completed" : progress > 50 ? "Over Halfway" : "Path in Progress"}
+                {progress === 100 ? "Journey Completed" : progress > 75 ? "The Final Ascent" : progress > 50 ? "Over Halfway" : "Path in Progress"}
                 </h2>
                 <p className="max-w-2xl mx-auto text-muted-foreground leading-relaxed">
                 {progress === 100
-                    ? "Om Namah Shivaya. You have completed the Giri Pradakshina, circling the center of the universe. Though the walk ends, the inner revolution has just begun. Carry this stillness with you."
+                    ? "Om Namah Shivaya. You have completed the Giri Pradakshina, circling the center of the universe. The dust of Arunachala now coats your feet, and its silence has entered your heart. This is not the end, but a new beginning. Carry the fire of knowledge with you into the world."
+                    : progress > 75
+                      ? "The summit is near. The final stretch is often the most testing, yet the most rewarding. Gather your inner strength. Let every breath be an offering. You are almost home."
                     : progress > 50
-                      ? "You have crossed the threshold. The body may tire, but the spirit strengthens. Continue with devotion."
-                      : "The path stretches before you, full of promise. Every step is a prayer. Keep walking."
+                      ? "You have crossed the threshold of the known. The body may tire, but the spirit awakens. You are now walking in the realm of the deeper self. Continue with unwavering devotion."
+                    : progress > 25
+                      ? "The initial excitement has settled into a steady rhythm. The mind is beginning to quiet. Allow the mountain to guide you. Trust the path."
+                      : "The journey of a thousand lifetimes begins with this single pilgrimage. Step with intention. Open your heart to the mysteries that await. The mountain is calling."
                 }
                 </p>
             </motion.div>

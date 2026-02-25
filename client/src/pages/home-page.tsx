@@ -10,25 +10,25 @@ export default function HomePage() {
     {
       name: "Lakshmi Priya",
       location: "Chennai, India",
-      quote: "The deep spiritual context provided for each Lingam transformed my Girivalam experience from a walk into a true pilgrimage. I felt the presence of the divine at every step.",
+      quote: "I've walked Girivalam ten times, but this was the first time I truly understood it. The guidance on the Lingams opened my eyes to the subtle energies I had been missing.",
       avatar: "LP"
     },
     {
       name: "David Miller",
       location: "London, UK",
-      quote: "Even from thousands of miles away, the virtual journey helped me find a center of stillness in my chaotic daily life. The 'Daily Wisdom' has become my essential morning ritual.",
+      quote: "I live in London and cannot travel, but the Virtual Darshan allowed me to complete the vow I made to my grandmother. I felt the heat of the Agni Lingam through the screen.",
       avatar: "DM"
     },
     {
       name: "Ravi Kumar",
       location: "Bangalore, India",
-      quote: "The group coordination features were a lifesaver during the crowded full moon walk. We tracked our elderly parents in real-time and never felt the anxiety of separation.",
+      quote: "Our group of 20 got separated in the midnight crowd. 'Squadron Overwatch' was a miracle—we found each other in minutes. It took the panic out of the pilgrimage.",
       avatar: "RK"
     },
     {
       name: "Sarah Jenkins",
       location: "Sydney, Australia",
-      quote: "I didn't expect the emotional release I felt using the journaling feature at the Kubera Lingam. This app holds space for you in a way technology rarely does.",
+      quote: "At the Kubera Lingam, the prompt asked me what 'wealth' meant to me. I sat and cried for ten minutes, releasing years of financial anxiety. This app holds space for you.",
       avatar: "SJ"
     }
   ];
@@ -65,7 +65,7 @@ export default function HomePage() {
             </div>
             <h3 className="text-2xl font-semibold">Ancient Wisdom</h3>
             <p className="text-muted-foreground leading-relaxed">
-              Uncover the mystical significance of the 8 Ashta Lingams. Access curated mantras, elemental associations, and historical lore that turn every step into a lesson in consciousness.
+              Unlock the secrets of the 8 Ashta Lingams. Each shrine is a portal to a specific aspect of the divine. Access curated mantras, elemental associations, and historical lore that turn every step into a lesson in consciousness.
             </p>
           </motion.div>
 
@@ -81,7 +81,7 @@ export default function HomePage() {
             </div>
             <h3 className="text-2xl font-semibold">Pilgrim's Compass</h3>
             <p className="text-muted-foreground leading-relaxed">
-              Walk the 14km path with confidence. Our GPS-enabled Pathfinder ensures you never miss a shrine, while 'Squadron Overwatch' keeps your group connected even in the densest crowds.
+              Navigate the 14km Pradakshina with precision. Our GPS-enabled Pathfinder ensures you never miss a shrine, while 'Squadron Overwatch' keeps your group connected, safe, and synchronized, even in the densest crowds.
             </p>
           </motion.div>
 
@@ -97,7 +97,7 @@ export default function HomePage() {
             </div>
             <h3 className="text-2xl font-semibold">Inner Sanctum Journal</h3>
             <p className="text-muted-foreground leading-relaxed">
-              Capture the whispers of your soul. Document your realizations, prayers, and moments of silence in a private digital diary geo-tagged to each sacred location on the path.
+              The journey inward is as important as the walk outward. Document your realizations, prayers, and moments of silence in a private digital diary, geo-tagged to the sacred ground where they emerged.
             </p>
           </motion.div>
         </div>
@@ -115,7 +115,7 @@ export default function HomePage() {
           >
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Voices of the Path</h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Hear from fellow pilgrims who have walked the path with Sacred Steps.
+              Real stories from seekers who have walked the path of fire.
             </p>
           </motion.div>
 
