@@ -40,9 +40,9 @@ export default function AuthPage() {
             <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
               <Map className="w-6 h-6 text-primary" />
             </div>
-            <CardTitle className="text-2xl font-bold">Welcome to Sacred Steps</CardTitle>
-            <CardDescription>
-              Begin your digital pilgrimage. Track your journey, meditate on the 8 Ashta Lingams, and find the stillness within.
+            <CardTitle className="text-2xl font-bold">The Journey Begins Here</CardTitle>
+            <CardDescription className="text-base">
+              Enter the digital sanctuary. Track your path around the sacred hill, connect with fellow seekers, and document your inner transformation.
             </CardDescription>
           </CardHeader>
           <CardContent>

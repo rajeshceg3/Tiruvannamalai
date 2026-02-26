@@ -10,25 +10,25 @@ export default function HomePage() {
     {
       name: "Lakshmi Priya",
       location: "Chennai, India",
-      quote: "I've walked Girivalam ten times, but this was the first time I truly understood it. The guidance on the Lingams opened my eyes to the subtle energies I had been missing.",
+      quote: "I've walked Girivalam ten times, but this was the first time I truly understood it. The guidance on the Lingams opened my eyes to the subtle energies I had been missing. The mantras became my heartbeat.",
       avatar: "LP"
     },
     {
       name: "David Miller",
       location: "London, UK",
-      quote: "I live in London and cannot travel, but the Virtual Darshan allowed me to complete the vow I made to my grandmother. I felt the heat of the Agni Lingam through the screen.",
+      quote: "I live in London and cannot travel, but the Virtual Darshan allowed me to complete the vow I made to my grandmother. I felt the heat of the Agni Lingam through the screen. It was real.",
       avatar: "DM"
     },
     {
       name: "Ravi Kumar",
       location: "Bangalore, India",
-      quote: "Our group of 20 got separated in the midnight crowd. 'Squadron Overwatch' was a miracle—we found each other in minutes. It took the panic out of the pilgrimage.",
+      quote: "Our group of 20 got separated in the midnight crowd. 'Squadron Overwatch' was a miracle—we found each other in minutes. It took the panic out of the pilgrimage and let us focus on the divine.",
       avatar: "RK"
     },
     {
       name: "Sarah Jenkins",
       location: "Sydney, Australia",
-      quote: "At the Kubera Lingam, the prompt asked me what 'wealth' meant to me. I sat and cried for ten minutes, releasing years of financial anxiety. This app holds space for you.",
+      quote: "At the Kubera Lingam, the prompt asked me what 'wealth' meant to me. I sat and cried for ten minutes, releasing years of financial anxiety. This app holds space for you like a wise friend.",
       avatar: "SJ"
     }
   ];
@@ -46,9 +46,9 @@ export default function HomePage() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Your Spiritual Toolkit</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">The Eightfold Path</h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Everything you need to make your pilgrimage meaningful, safe, and deeply personal.
+            A digital sanctuary designed to deepen your connection with the sacred hill.
           </p>
         </motion.div>
 
@@ -65,7 +65,7 @@ export default function HomePage() {
             </div>
             <h3 className="text-2xl font-semibold">Ancient Wisdom</h3>
             <p className="text-muted-foreground leading-relaxed">
-              Unlock the secrets of the 8 Ashta Lingams. Each shrine is a portal to a specific aspect of the divine. Access curated mantras, elemental associations, and historical lore that turn every step into a lesson in consciousness.
+              Unlock the secrets of the 8 Ashta Lingams. Access specific mantras, elemental associations, and historical lore for each shrine. Turn every step into a lesson in consciousness.
             </p>
           </motion.div>
 

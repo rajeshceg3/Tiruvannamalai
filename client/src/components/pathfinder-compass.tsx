@@ -76,8 +76,11 @@ export function PathfinderCompass({ targetShrine, onCheckIn, isCheckingIn, hasVi
           Target Locked
         </Badge>
         <CardTitle className="text-2xl font-bold text-primary">{targetShrine.name}</CardTitle>
-        <CardDescription className="flex items-center justify-center gap-2">
-           <span className="text-2xl">{targetShrine.emoji}</span> {targetShrine.element} Element
+        <CardDescription className="flex flex-col items-center justify-center gap-1">
+           <div className="flex items-center gap-2">
+             <span className="text-2xl">{targetShrine.emoji}</span> {targetShrine.element} Element
+           </div>
+           <span className="text-sm font-serif italic text-primary/80">"{targetShrine.mantra}"</span>
         </CardDescription>
       </CardHeader>
 
