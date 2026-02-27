@@ -46,7 +46,30 @@ const DAILY_QUOTES = [
   "Set your life on fire. Seek those who fan your flames. - Rumi",
   "Knock, and He'll open the door. Vanish, and He'll make you shine like the sun. - Rumi",
   "Yesterday I was clever, so I wanted to change the world. Today I am wise, so I am changing myself. - Rumi",
-  "Don't grieve. Anything you lose comes round in another form. - Rumi"
+  "Don't grieve. Anything you lose comes round in another form. - Rumi",
+  "The mountain is still, but the mind is moving. Be like the mountain. - Ancient Proverb",
+  "If you want to know the truth of who you are, walk until there is no you left. - Pilgrim's Saying",
+  "Silence is the only language in which the soul can speak its truth. - Ramana Maharshi",
+  "You are the sky. Everything else – it's just the weather. - Pema Chödrön",
+  "Do not be satisfied with the stories that come before you. Unfold your own myth. - Rumi",
+  "The heart is the hub of all sacred places. Go there and roam. - Bhagavan Nityananda",
+  "God is the silence of the heart. - Mother Teresa",
+  "When the mind is silent, the heart speaks. The language of the heart is love. - Sri Sathya Sai Baba",
+  "There is a voice that doesn't use words. Listen. - Rumi",
+  "The quieter you become, the more you can hear. - Ram Dass",
+  "Look past your thoughts, so you may drink the pure nectar of This Moment. - Rumi",
+  "The temple bell stops but I still hear the sound coming out of the flowers. - Matsuo Basho",
+  "Meditation is the dissolution of thoughts in Eternal awareness or Pure consciousness without objectification, knowing without thinking, merging finitude in infinity. - Swami Sivananda",
+  "The mind is a bundle of thoughts. The thoughts arise because there is a thinker. The thinker is the ego. The ego, if sought, will vanish automatically. - Ramana Maharshi",
+  "Let come what comes, let go what goes. See what remains. - Ramana Maharshi",
+  "You are the awareness, disguising itself as a person. - Eckhart Tolle",
+  "There is no path to peace. Peace is the path. - Mahatma Gandhi",
+  "The best way to know God is to love many things. - Vincent Van Gogh",
+  "We are not human beings having a spiritual experience. We are spiritual beings having a human experience. - Pierre Teilhard de Chardin",
+  "The soul always knows what to do to heal itself. The challenge is to silence the mind. - Caroline Myss",
+  "To go out from the self is to arrive at the other; to leave the self is to arrive at God. - Krishnamurti",
+  "The inspiration you seek is already within you. Be silent and listen. - Rumi",
+  "Only from the heart can you touch the sky. - Rumi"
 ];
 
 function DashboardSkeleton() {

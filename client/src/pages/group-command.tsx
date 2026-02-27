@@ -19,7 +19,7 @@ import { MissionFailed } from "@/components/ui/mission-failed";
 import { type InsertWaypoint, type CommandCenterResponse, type Group } from "@shared/schema";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info } from "lucide-react";
+import { Info, MessageSquare, Moon, Sun } from "lucide-react";
 
 export default function GroupCommand() {
   const { user } = useAuth();
@@ -531,46 +531,84 @@ export default function GroupCommand() {
             </Dialog>
 
             <Dialog open={showInfo} onOpenChange={setShowInfo}>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-2xl h-[80vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Squadron Protocols</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="grid gap-4">
-                    <div className="grid grid-cols-[auto,1fr] gap-4 items-start">
-                      <div className="p-2 bg-destructive/10 rounded-full">
-                        <AlertCircle className="w-5 h-5 text-destructive" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-destructive">SOS Beacon</h4>
-                        <p className="text-sm text-muted-foreground">Critical distress signal. Activates immediate audiovisual alarm on all squad devices. Use for medical emergencies or lost contact. The map will pulse red at your location until cleared.</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-[auto,1fr] gap-4 items-start">
-                      <div className="p-2 bg-primary/10 rounded-full">
-                        <Users className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-primary">Regroup Protocol</h4>
-                        <p className="text-sm text-muted-foreground">Tactical muster call. Designates your current coordinates as the immediate rally point for the squad. Use when the group is fragmented or before entering crowded zones.</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-[auto,1fr] gap-4 items-start">
-                      <div className="p-2 bg-muted rounded-full">
-                        <Flag className="w-5 h-5 text-foreground" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold">Waypoints & Markers</h4>
-                        <p className="text-sm text-muted-foreground">
-                          <strong>Rally:</strong> Designated meeting spot.<br/>
-                          <strong>Hazard:</strong> Obstruction, crowd crush, or slippery path.<br/>
-                          <strong>Objective:</strong> Shrine or point of interest.
-                        </p>
-                      </div>
+                <div className="space-y-8 py-4">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2 border-b pb-2">
+                      <AlertCircle className="w-5 h-5 text-primary" /> Emergency Signals
+                    </h3>
+                    <div className="grid gap-4 md:grid-cols-2">
+                       <div className="p-4 bg-destructive/10 rounded-lg">
+                          <h4 className="font-bold text-destructive mb-2">SOS (Red)</h4>
+                          <p className="text-sm text-muted-foreground">
+                             Use ONLY for critical emergencies (injury, lost contact, threat). Activates alarms on all devices. Location pulses red.
+                          </p>
+                       </div>
+                       <div className="p-4 bg-primary/10 rounded-lg">
+                          <h4 className="font-bold text-primary mb-2">REGROUP (Blue)</h4>
+                          <p className="text-sm text-muted-foreground">
+                             Tactical muster call. Use when the group is fragmented or before entering crowded zones like temples or markets.
+                          </p>
+                       </div>
                     </div>
                   </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2 border-b pb-2">
+                      <MessageSquare className="w-5 h-5 text-primary" /> Comms Etiquette
+                    </h3>
+                    <div className="text-sm text-muted-foreground space-y-2">
+                       <p><strong>Brevity:</strong> Keep SitReps concise. "At Agni Lingam, resting 5m" is better than a long story.</p>
+                       <p><strong>Status Updates:</strong> Update your status to "MOVING" when leaving a rest stop and "HOLDING" when stopping.</p>
+                       <p><strong>Visual Contact:</strong> Use the map to confirm visual range. "Eyes on" means you can physically see the member.</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2 border-b pb-2">
+                       <Moon className="w-5 h-5 text-primary" /> Formation Protocols
+                    </h3>
+                    <div className="grid gap-4 md:grid-cols-2">
+                       <div className="p-4 border rounded-lg">
+                          <h4 className="font-bold mb-2 flex items-center gap-2"><Sun className="w-4 h-4" /> Day Operations</h4>
+                          <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                             <li>Maintain 10-20m spacing.</li>
+                             <li>Use "Buddy System" - never walk entirely alone.</li>
+                             <li>Check-in at every Lingam physically.</li>
+                          </ul>
+                       </div>
+                       <div className="p-4 border rounded-lg bg-muted/50">
+                          <h4 className="font-bold mb-2 flex items-center gap-2"><Moon className="w-4 h-4" /> Night Operations</h4>
+                          <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                             <li>Tighten formation to 5m visual range.</li>
+                             <li>Lead navigator carries primary light.</li>
+                             <li>Rear guard ensures no stragglers.</li>
+                             <li>Frequent "Halt & Count" checks.</li>
+                          </ul>
+                       </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                     <h3 className="text-lg font-semibold flex items-center gap-2 border-b pb-2">
+                       <Flag className="w-5 h-5 text-primary" /> Waypoint Types
+                     </h3>
+                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                        <div className="border p-3 rounded">
+                           <strong>RALLY:</strong> Safe meeting spot.
+                        </div>
+                        <div className="border p-3 rounded">
+                           <strong>HAZARD:</strong> Obstacle/Danger.
+                        </div>
+                        <div className="border p-3 rounded">
+                           <strong>OBJECTIVE:</strong> Target shrine.
+                        </div>
+                     </div>
+                  </div>
+
                 </div>
               </DialogContent>
             </Dialog>

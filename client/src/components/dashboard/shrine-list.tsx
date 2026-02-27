@@ -72,6 +72,11 @@ export function ShrineList({ shrines, visits, onCheckIn }: { shrines: Shrine[], 
                 <CardDescription>{shrine.element} Element • {shrine.direction}</CardDescription>
               </CardHeader>
               <CardContent className="flex-1 p-4 pt-0">
+                {shrine.mantra && (
+                    <div className="mb-3 p-2 bg-muted/40 rounded border border-muted text-xs font-serif italic text-center text-primary/80">
+                      "{shrine.mantra}"
+                    </div>
+                )}
                 <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
                   {shrine.description}
                 </p>

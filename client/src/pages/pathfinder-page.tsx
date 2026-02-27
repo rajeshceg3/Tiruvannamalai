@@ -26,7 +26,19 @@ const SAFETY_TIPS = [
   "Chant 'Om Arunachala' internally. Let the mantra synchronize with your footsteps.",
   "If you feel tired, rest. There are many mandapams (halls) along the way. The journey is not a race.",
   "Offer a smile to fellow pilgrims. We are all walking each other home.",
-  "Look up at the peak often. Its shape changes as you circle it, revealing different faces of the divine."
+  "Look up at the peak often. Its shape changes as you circle it, revealing different faces of the divine.",
+  "Dress modestly. This is a sacred site. Shoulders and knees should generally be covered.",
+  "Keep the environment clean. Carry your trash with you until you find a proper disposal bin.",
+  "Avoid walking alone late at night in unlit areas. Use the 'Squadron Overwatch' feature to stay connected.",
+  "If you encounter a snake, stand still and let it pass. They are considered sacred and generally avoid humans.",
+  "Carry some small change. You may wish to offer coins to sadhus or temples along the way.",
+  "Do not point your feet towards the mountain or any Lingam when sitting. It is considered disrespectful.",
+  "The full moon (Pournami) draws lakhs of pilgrims. Be prepared for large crowds and move with the flow.",
+  "Let go of expectations. The mountain will give you exactly what you need, not necessarily what you want.",
+  "If you get lost, ask a local. The people of Tiruvannamalai are kind and used to pilgrims.",
+  "Embrace the discomfort. Blisters and fatigue are part of the tapas (austerity) that burns away karma.",
+  "Listen to the sounds of nature. The wind in the trees and the calls of birds are part of the mountain's voice.",
+  "Before starting, make a sankalpa (intention). What are you offering to the fire of Arunachala today?"
 ];
 
 export default function PathfinderPage() {
@@ -169,6 +181,9 @@ export default function PathfinderPage() {
                        </CardHeader>
                        <CardContent>
                          <div className="text-xs text-muted-foreground font-semibold">{shrine.element}</div>
+                         <div className="text-xs font-serif italic text-primary/80 my-1">
+                           "{shrine.mantra}"
+                         </div>
                          <p className="text-xs mt-2 text-muted-foreground line-clamp-2 italic">
                            "{shrine.significance}"
                          </p>

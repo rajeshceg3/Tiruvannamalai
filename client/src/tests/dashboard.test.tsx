@@ -122,7 +122,7 @@ describe("DashboardPage", () => {
     });
 
     render(<DashboardPage />);
-    expect(screen.getByText("Your Journal Awaits")).toBeDefined();
+    expect(screen.getByText("The Sacred Scroll")).toBeDefined();
   });
 
   it("renders visits in journal", () => {
